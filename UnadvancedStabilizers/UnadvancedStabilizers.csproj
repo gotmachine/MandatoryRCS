@@ -52,11 +52,19 @@
     <Compile Include="VesselModuleRotationListener.cs" />
     <Compile Include="VesselModuleRotation.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="GameData\UnadvancedStabilizers\UnadvancedStabilizers.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GameData\UnadvancedStabilizers\ModuleTorqueControllerPatch.cfg" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Debug\UnadvancedStabilizers.dll"
 xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Debug\UnadvancedStabilizers.dll" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\UnadvancedStabilizers\"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Debug\UnadvancedStabilizers.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\UnadvancedStabilizers\"</PostBuildEvent>
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Debug\UnadvancedStabilizers.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\UnadvancedStabilizers\"
+
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Release\UnadvancedStabilizers.dll" "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\GameData\UnadvancedStabilizers\"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
