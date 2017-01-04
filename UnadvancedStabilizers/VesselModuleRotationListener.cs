@@ -45,6 +45,5 @@ namespace UnadvancedStabilizers
             GameEvents.onSetSpeedMode.Remove(onSetSpeedMode);
             GameEvents.onVesselChange.Remove(onVesselChange);
         }
-
     }
 }

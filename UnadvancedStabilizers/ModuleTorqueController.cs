@@ -11,34 +11,6 @@ namespace UnadvancedStabilizers
 {
     public class ModuleTorqueController : PartModule
     {
-
-        // DEBUG
-        public Vector3d planetUp;
-        public Vector3 obtNormal;
-        public Vector3 obtRadial;
-        public Vector3 srfNormal;
-        public Vector3 srfRadial;
-
-
-        [KSPField(guiActive = true, guiName = "Rot X")]
-        public float rotx;
-        [KSPField(guiActive = true, guiName = "Rot Y")]
-        public float roty;
-        [KSPField(guiActive = true, guiName = "Rot Z")]
-        public float rotz;
-        [KSPField(guiActive = true, guiName = "SavAngVelocity")]
-        public float savedAngularVelocity;
-        [KSPField(guiActive = true, guiName = "CurAngVelocity")]
-        public float currentAngularVelocity;
-        [KSPField(guiActive = true, guiName = "Target keep")]
-        public bool targetKeeping;
-        [KSPField(guiActive = true, guiName = "Target")]
-        public string targetString;
-        [KSPField(guiActive = true, guiName = "Heading")]
-        public string headingString;
-
-        // END DEBUG
-
         public static Keyframe[] curveKeys = new Keyframe[]
         {
             new Keyframe(0.000f, -1.000f),
@@ -92,100 +64,12 @@ namespace UnadvancedStabilizers
             }
         }
 
-        [KSPEvent(guiName = "Prograde orb", active = true, guiActive = true)]
-        public void porb()
-        {
-            this.vessel.SetRotation(Quaternion.FromToRotation(vessel.GetTransform().up, vessel.obt_velocity) * vessel.transform.rotation, true);
-        }
-
-        [KSPEvent(guiName = "Prograde srf", active = true, guiActive = true)]
-        public void psurf()
-        {
-            this.vessel.SetRotation(Quaternion.FromToRotation(vessel.GetTransform().up, vessel.srf_velocity) * vessel.transform.rotation, true);
-        }
-
-        [KSPEvent(guiName = "Normal orb", active = true, guiActive = true)]
-        public void norb()
-        {
-            planetUp = (vessel.rootPart.transform.position - vessel.mainBody.position).normalized;
-            obtNormal = Vector3.Cross(vessel.obt_velocity, planetUp).normalized;
-
-            this.vessel.SetRotation(Quaternion.FromToRotation(vessel.GetTransform().up, obtNormal) * vessel.transform.rotation, true);
-        }
-
-        [KSPEvent(guiName = "Normal srf", active = true, guiActive = true)]
-        public void nsrf()
-        {
-            planetUp = (vessel.rootPart.transform.position - vessel.mainBody.position).normalized;
-            srfNormal = Vector3.Cross(vessel.srf_velocity, planetUp).normalized;
-
-            this.vessel.SetRotation(Quaternion.FromToRotation(vessel.GetTransform().up, srfNormal) * vessel.transform.rotation, true);
-        }
-
-        [KSPEvent(guiName = "RadialIn orb", active = true, guiActive = true)]
-        public void rorb()
-        {
-            planetUp = (vessel.rootPart.transform.position - vessel.mainBody.position).normalized;
-            obtNormal = Vector3.Cross(vessel.obt_velocity, planetUp).normalized;
-            obtRadial = Vector3.Cross(vessel.obt_velocity, obtNormal).normalized;
-
-            this.vessel.SetRotation(Quaternion.FromToRotation(vessel.GetTransform().up, obtRadial) * vessel.transform.rotation, true);
-        }
-
-        [KSPEvent(guiName = "RadialIn srf", active = true, guiActive = true)]
-        public void rsrf()
-        {
-            planetUp = (vessel.rootPart.transform.position - vessel.mainBody.position).normalized;
-            srfNormal = Vector3.Cross(vessel.srf_velocity, planetUp).normalized;
-            srfRadial = Vector3.Cross(vessel.srf_velocity, srfNormal).normalized;
-
-            this.vessel.SetRotation(Quaternion.FromToRotation(vessel.GetTransform().up, srfRadial) * vessel.transform.rotation, true);
-        }
-
-        [KSPEvent(guiName = "Maneuver", active = true, guiActive = true)]
-        public void man()
-        {
-            Vector3d maneuver = vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(vessel.orbit);
-
-            this.vessel.SetRotation(Quaternion.FromToRotation(vessel.GetTransform().up, maneuver) * vessel.transform.rotation, true);
-        }
-
-        [KSPEvent(guiName = "Target", active = true, guiActive = true)]
-        public void targ()
-        {
-            Vector3d target = (vessel.targetObject.GetTransform().position - vessel.transform.position);
-
-            this.vessel.SetRotation(Quaternion.FromToRotation(vessel.GetTransform().up, target) * vessel.transform.rotation, true);
-        }
-
-        [KSPEvent(guiName = "Target retro", active = true, guiActive = true)]
-        public void targPro()
-        {
-            Vector3d targetpro = vessel.targetObject.GetObtVelocity() - vessel.obt_velocity;
-
-            this.vessel.SetRotation(Quaternion.FromToRotation(vessel.GetTransform().up, targetpro) * vessel.transform.rotation, true);
-        }
-
-        
-
-        // Note : things were working in Update()
         public void FixedUpdate()
         {
             if (!(HighLogic.LoadedSceneIsFlight && FlightGlobals.ready)) 
             { 
                 return;
             }
-
-            // DEBUG
-            rotx = this.vessel.GetTransform().rotation.x;
-            roty = this.vessel.GetTransform().rotation.y;
-            rotz = this.vessel.GetTransform().rotation.z;
-            currentAngularVelocity = this.vessel.angularVelocity.magnitude;
-            savedAngularVelocity = this.vessel.vesselModules.OfType<VesselModuleRotation>().First().angularVelocity.magnitude;
-            targetKeeping = this.vessel.vesselModules.OfType<VesselModuleRotation>().First().autopilotTargetHold;
-            targetString = "X" + vessel.Autopilot.SAS.targetOrientation.x.ToString("0.00") + " Y" + vessel.Autopilot.SAS.targetOrientation.y.ToString("0.00") + " Z" + vessel.Autopilot.SAS.targetOrientation.z.ToString("0.00");
-            headingString = "X" + vessel.transform.up.x.ToString("0.00") + " Y" + vessel.transform.up.y.ToString("0.00") + " Z" + vessel.transform.up.z.ToString("0.00");
-       
 
             // Force SAS mode so reaction wheels don't respond to player input :
             rwmodule.actuatorModeCycle = 1; // 0 = Normal, 1 = SAS, 2 = Pilot

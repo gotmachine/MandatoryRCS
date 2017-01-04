@@ -58,6 +58,7 @@
   <ItemGroup>
     <None Include="GameData\UnadvancedStabilizers\ModuleTorqueControllerPatch.cfg" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Debug\UnadvancedStabilizers.dll"
