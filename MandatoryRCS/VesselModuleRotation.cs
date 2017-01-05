@@ -8,9 +8,11 @@ using UnityEngine;
 // - OK - Fix maneuver sas hold not being reset if maneuver node is modified during warp
 // - OK - Restore SAS selection on loading
 // - OK - Restore SAS selection on switching vessels in timewarp
-// - Fix camera rotating when timewarping ????
-// - use p.addforce instead of rigidbodies, see 1.2 patchnotes --> GRRR
-// - Add EC and RW torque conditions to SAS hold
+// - TO TEST - Disable everything on prelaunch / landed / splashed
+// - Add EC and RW torque conditions to SAS hold ?
+// - Fix camera rotating when timewarping, need to find a reproductible case
+// - use part.addforce instead of part.rigidbody.addforce, see KSP1.2 patchnotes --> not sure this is a good idea and things seemsto work fine as they are
+
 
 namespace MandatoryRCS
 {
@@ -171,6 +173,11 @@ namespace MandatoryRCS
 
         private void ApplyAngularVelocity()
         {
+            if (Vessel.situation == Vessel.Situations.PRELAUNCH || Vessel.situation == Vessel.Situations.LANDED || Vessel.situation == Vessel.Situations.SPLASHED)
+            {
+                return;
+            }
+
             Debug.Log("[US] Restoring " + Vessel.vesselName + "rotation after timewarp/load" );
             Vector3 COM = Vessel.CoM;
             Quaternion rotation = Vessel.ReferenceTransform.rotation;
@@ -190,11 +197,21 @@ namespace MandatoryRCS
 
         private void RotateTowardTarget()
         {
+            if (Vessel.situation == Vessel.Situations.PRELAUNCH || Vessel.situation == Vessel.Situations.LANDED || Vessel.situation == Vessel.Situations.SPLASHED)
+            {
+                return;
+            }
+
             Vessel.SetRotation(Quaternion.FromToRotation(Vessel.GetTransform().up, AutopilotTargetDirection()) * Vessel.transform.rotation, true);
         }
 
         private void RotatePacked()
         {
+            if (Vessel.situation == Vessel.Situations.PRELAUNCH || Vessel.situation == Vessel.Situations.LANDED || Vessel.situation == Vessel.Situations.SPLASHED)
+            {
+                return;
+            }
+
             Vessel.SetRotation(Quaternion.AngleAxis(angularVelocity.magnitude * TimeWarp.CurrentRate, Vessel.ReferenceTransform.rotation * angularVelocity) * Vessel.transform.rotation, true);
         }
 
@@ -270,8 +287,7 @@ namespace MandatoryRCS
         }
 
 
-        // Some code for normal/radial vectors copypasted from :
-        // https://github.com/Crzyrndm/Pilot-Assistant/blob/master/PilotAssistant/FlightModules/VesselData.cs
+        // Return the orientation vector of the saved SAS mode and context
         private Vector3 AutopilotTargetDirection()
         {
             Vector3 target = new Vector3();
