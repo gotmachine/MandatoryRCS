@@ -7,8 +7,8 @@
     <ProjectGuid>{98D72929-051F-4028-9BA6-293E2379A2B2}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>UnadvancedStabilizers</RootNamespace>
-    <AssemblyName>UnadvancedStabilizers</AssemblyName>
+    <RootNamespace>MandatoryRCS</RootNamespace>
+    <AssemblyName>MandatoryRCS</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -61,11 +61,11 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Debug\UnadvancedStabilizers.dll"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Debug\UnadvancedStabilizers.dll" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\UnadvancedStabilizers\"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Debug\UnadvancedStabilizers.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\UnadvancedStabilizers\"
+    <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Debug\bin\Debug\MandatoryRCS.dll"
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Debug\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\MandatoryRCS\"
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Debug\MandatoryRCS.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\MandatoryRCS\"
 
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\bin\Release\UnadvancedStabilizers.dll" "C:\Users\Got\Desktop\KSP\SPE source\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\UnadvancedStabilizers\GameData\UnadvancedStabilizers\"</PostBuildEvent>
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Release\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\GameData\MandatoryRCS\"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
