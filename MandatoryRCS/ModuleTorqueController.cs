@@ -7,7 +7,7 @@ using UnityEngine;
 // TODO :
 // - implement torque ON when RCS is ON, to reduce RCS fuel consumption
 
-namespace UnadvancedStabilizers
+namespace MandatoryRCS
 {
     public class ModuleTorqueController : PartModule
     {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace UnadvancedStabilizers
+namespace MandatoryRCS
 {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     class VesselModuleRotationListener : MonoBehaviour

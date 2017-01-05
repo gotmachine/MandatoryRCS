@@ -5,14 +5,14 @@ using System.Text;
 using UnityEngine;
 
 // TODO :
-// - Fix maneuver sas hold not being reset if maneuver node is modified during warp -> need a more solid way of detecting that
+// - OK - Fix maneuver sas hold not being reset if maneuver node is modified during warp
 // - OK - Restore SAS selection on loading
-// - Restore SAS selection on switching vessels in timewarp
+// - OK - Restore SAS selection on switching vessels in timewarp
 // - Fix camera rotating when timewarping ????
 // - use p.addforce instead of rigidbodies, see 1.2 patchnotes --> GRRR
 // - Add EC and RW torque conditions to SAS hold
 
-namespace UnadvancedStabilizers
+namespace MandatoryRCS
 {
     public class VesselModuleRotation : VesselModule
     {
@@ -254,7 +254,7 @@ namespace UnadvancedStabilizers
                 return false;
             }
 
-            // Disable maneuver hold if the maneuver was modified or deleted
+            // Disable target hold if the maneuver node was modified or deleted
             if (autopilotMode == 9)
             {
                 if (Vessel.patchedConicSolver.maneuverNodes.Count == 0)
