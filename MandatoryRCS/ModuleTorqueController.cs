@@ -40,7 +40,7 @@ namespace MandatoryRCS
 
             // Hide RW control modes and enable/disable toggle from GUI
             // RW torque can still be tweaked/disabled trough the renamed for clarity "Reaction Wheel Autority" GUI
-            foreach (BaseField f in rwmodule.Fields) 
+            foreach (BaseField f in rwmodule.Fields)
             {
                 if (f.name.Equals("actuatorModeCycle") || f.name.Equals("stateString"))
                 {
@@ -53,7 +53,7 @@ namespace MandatoryRCS
                 }
                 // Debug.Log("[MTC] RW Fields : guiName=" + f.guiName + ", name=" + f.name + ", guiActive=" + f.guiActive + ", guiActiveEditor=" + f.guiActiveEditor);
             }
-            foreach (BaseEvent e in rwmodule.Events) 
+            foreach (BaseEvent e in rwmodule.Events)
             {
                 if (e.name.Equals("OnToggle"))
                 {
@@ -66,8 +66,8 @@ namespace MandatoryRCS
 
         public void FixedUpdate()
         {
-            if (!(HighLogic.LoadedSceneIsFlight && FlightGlobals.ready)) 
-            { 
+            if (!(HighLogic.LoadedSceneIsFlight && FlightGlobals.ready))
+            {
                 return;
             }
 
@@ -90,7 +90,7 @@ namespace MandatoryRCS
                     rwmodule.enabled = false;
                     rwmodule.isEnabled = false;
                 }
-                else 
+                else
                 {
                     rwmodule.enabled = true;
                     rwmodule.isEnabled = true;

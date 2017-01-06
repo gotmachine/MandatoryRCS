@@ -49,17 +49,15 @@
   <ItemGroup>
     <Compile Include="ModuleTorqueController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="VesselModuleRotationEvents.cs" />
+    <Compile Include="MandatoryRCSEvents.cs" />
     <Compile Include="VesselModuleRotation.cs" />
-    <Compile Include="VesselModuleTorque.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="GameData\UnadvancedStabilizers\UnadvancedStabilizers.dll" />
+    <Content Include="GameData\MandatoryRCS\MandatoryRCS.dll" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="GameData\UnadvancedStabilizers\ModuleTorqueControllerPatch.cfg" />
+    <None Include="GameData\MandatoryRCS\ModuleTorqueControllerPatch.cfg" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Debug\MandatoryRCS.dll"

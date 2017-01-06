@@ -8,8 +8,9 @@ using UnityEngine;
 // - OK - Fix maneuver sas hold not being reset if maneuver node is modified during warp
 // - OK - Restore SAS selection on loading
 // - OK - Restore SAS selection on switching vessels in timewarp
+// - Adjust SAS Hold conditions
 // - TO TEST - Disable everything on prelaunch / landed / splashed
-// - Add EC and RW torque conditions to SAS hold ?
+// - Add RW torque conditions to SAS hold ?
 // - Fix camera rotating when timewarping, need to find a reproductible case
 // - use part.addforce instead of part.rigidbody.addforce, see KSP1.2 patchnotes --> not sure this is a good idea and things seemsto work fine as they are
 
@@ -101,14 +102,14 @@ namespace MandatoryRCS
                     {
                         if (autopilotContext == autopilotContextCurrent) // Abort if the navball context (orbit/surface/target) has changed
                         {
-                            Debug.Log("[US] " + Vessel.vesselName + " going OFF rails : applying rotation toward SAS target, autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext);
+                            // Debug.Log("[US] " + Vessel.vesselName + " going OFF rails : applying rotation toward SAS target, autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext);
                             RotateTowardTarget();
                         }
                         restoreAutopilotTarget = false;
                     }
                     if (restoreAngularVelocity) // Restoring saved rotation if it was above the threesold
                     {
-                        Debug.Log("[US] " + Vessel.vesselName + " going OFF rails : restoring angular velocity, angvel=" + angularVelocity.magnitude);
+                        // Debug.Log("[US] " + Vessel.vesselName + " going OFF rails : restoring angular velocity, angvel=" + angularVelocity.magnitude);
                         if (angularVelocity.magnitude > lowVelocityThreesold)
                         {
                             ApplyAngularVelocity();
@@ -124,14 +125,14 @@ namespace MandatoryRCS
                             if (RestoreSASMode(setSASMode))
                             {
                                 retrySAS = false;
-                                Debug.Log("[US] autopilot mode " + setSASMode + " set at count " + retrySASCount);
+                                // Debug.Log("[US] autopilot mode " + setSASMode + " set at count " + retrySASCount);
                             }
                             retrySASCount--;
                         }
                         else
                         {
                             retrySAS = false;
-                            Debug.Log("[US] can't set autopilot mode.");
+                            // Debug.Log("[US] can't set autopilot mode.");
                         }
                     }
 
@@ -159,7 +160,7 @@ namespace MandatoryRCS
         // This is called only when timewarping (not on vessel unload)
         public override void OnGoOnRails()
         {
-            Debug.Log("[US] " + Vessel.vesselName + " going ON rails, on target ? " + autopilotTargetHold + ", autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext + ", angvel=" + angularVelocity.magnitude);
+            // Debug.Log("[US] " + Vessel.vesselName + " going ON rails, on target ? " + autopilotTargetHold + ", autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext + ", angvel=" + angularVelocity.magnitude);
         }
 
         // Vessel is entering physics simulation, either by being loaded or getting out of timewarp
@@ -178,7 +179,7 @@ namespace MandatoryRCS
                 return;
             }
 
-            Debug.Log("[US] Restoring " + Vessel.vesselName + "rotation after timewarp/load" );
+            // Debug.Log("[US] Restoring " + Vessel.vesselName + "rotation after timewarp/load" );
             Vector3 COM = Vessel.CoM;
             Quaternion rotation = Vessel.ReferenceTransform.rotation;
 
@@ -230,8 +231,8 @@ namespace MandatoryRCS
             // Checking if the autopilot hold mode should be enabled
             if (Vessel.Autopilot.Enabled
                 && !(Vessel.Autopilot.Mode.Equals(VesselAutopilot.AutopilotMode.StabilityAssist))
-                && angularVelocity.magnitude < 0.05f // The vessel isn't rotating
-                && Math.Max(Vector3.Dot(Vessel.Autopilot.SAS.targetOrientation.normalized, Vessel.GetTransform().up.normalized), 0) > 0.95f) // 1.0 = toward target, 0.0 = target is at a 90° angle
+                && angularVelocity.magnitude < lowVelocityThreesold * 2 // The vessel isn't rotating too much
+                && Math.Max(Vector3.Dot(Vessel.Autopilot.SAS.targetOrientation.normalized, Vessel.GetTransform().up.normalized), 0) > 0.98f) // 1.0 = toward target, 0.0 = target is at a 90° angle, previously 0.95
             {
                 autopilotTargetHold = true;
             }

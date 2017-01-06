@@ -7,7 +7,7 @@ using UnityEngine;
 namespace MandatoryRCS
 {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
-    class VesselModuleRotationEvents : MonoBehaviour
+    class MandatoryRCSEvents : MonoBehaviour
     {
         private bool vesselLoadOnSceneChange;
 
@@ -15,7 +15,6 @@ namespace MandatoryRCS
         {
             GameEvents.onSetSpeedMode.Add(onSetSpeedMode);
             GameEvents.onVesselChange.Add(onVesselChange);
-            GameEvents.onVesselStandardModification.Add(onVesselStandardModification);
             vesselLoadOnSceneChange = true;
         }
 
@@ -27,11 +26,6 @@ namespace MandatoryRCS
                 FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleRotation>().First().vesselSASHasChanged = true;
                 vesselLoadOnSceneChange = false;
             }
-        }
-
-        private void onVesselStandardModification(Vessel v)
-        {
-            v.vesselModules.OfType<VesselModuleTorque>().First().UpdateTorqueModules(v);
         }
 
         // Detect active vessel change when switching vessel in the physics bubble
@@ -50,7 +44,6 @@ namespace MandatoryRCS
         {
             GameEvents.onSetSpeedMode.Remove(onSetSpeedMode);
             GameEvents.onVesselChange.Remove(onVesselChange);
-            GameEvents.onVesselStandardModification.Remove(onVesselStandardModification);
         }
     }
 }
