@@ -52,7 +52,6 @@
     <Compile Include="MandatoryRCSEvents.cs" />
     <Compile Include="VesselModuleRotation.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Debug\MandatoryRCS.dll"
