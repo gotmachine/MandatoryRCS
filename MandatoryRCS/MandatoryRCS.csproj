@@ -53,10 +53,7 @@
     <Compile Include="VesselModuleRotation.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="GameData\MandatoryRCS\MandatoryRCS.dll" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="GameData\MandatoryRCS\ModuleTorqueControllerPatch.cfg" />
+    <Folder Include="GameData\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
