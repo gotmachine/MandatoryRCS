@@ -23,6 +23,8 @@ Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 ### Incompatibilities
 - [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - Partially realistic reaction wheels
 - [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) - Bad thing will happen if you keep this one
+### Licensing
+This is free and unencumbered software released into the public domain.
 
 ## Planned features
 ### An (optional) part set of RCS thrusters and monopropellant tanks
