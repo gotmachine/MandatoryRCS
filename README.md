@@ -1,8 +1,8 @@
 # MandatoryRCS
 
-## Features
 This plugin revisit the stock balance between the overpowered reaction wheels and RCS thrusters which are useless outside of docking situations. It does not propose a more realistic simulation of reaction wheels but is collection of tweaks aimed at limiting their functions and balancing the gameplay. Reaction wheels are turned into stabilizers, preventing your vessel to spin out of control and keeping it pointed at the direction you choose in the SAS autopilot. But you can't use them to initiate a rotation, this mean that you always need a few RCS thrusters to be able to control your vessel orientation.
 
+## Features
 ### Reaction wheels nerf
 - Reaction wheels provide no torque on pilot or SAS rotation requests.
 - Reaction wheels provide full torque when SAS "Stability mode" is turned on.
