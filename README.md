@@ -53,6 +53,7 @@ This is free and unencumbered software released into the public domain.
   - 2x lateral + 2x front
 - Aerodynamic 5-ways block
 - Large RCS LFO blocks
+
 ### Rewrite / overhaul of the reaction wheels nerf
 - Reaction wheels can't be used to "snap" to a SAS selection, they provide torque only when the SAS selection has allready been reached.
 - Make reaction wheels able to "help" RCS trusters by providing torque when they are in use, lowering the RCS fuel consumption.
