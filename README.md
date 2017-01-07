@@ -66,39 +66,36 @@ So public domain, feel free to do anything, especially updating this plugin if I
 #### v1.0-pre1 for KSP 1.2.2
 First test build
 
-## Perhaps planned features
+#### Perhaps planned features
 
-#### Ingame settings in the difficulty options menu
-
-#### Modification of the reaction wheels nerf
+- Ingame settings in the difficulty options menu
 - Make reaction wheels able to "help" RCS thrusters by providing torque when they are activated, lowering the RCS fuel consumption.
-
-#### A part pack of RCS thrusters, MP tanks and orbital MP engines
-- RCS options earlier in the tech tree
-- Decrease of stock MP tanks dry mass
-- Rebalance the ISP of MP engines and RCS blocks
-- Monopropellant tanks from RLA Stockalike
-- Orbital MP engines from RLA Stockalike
-- 0.25 kN RCS blocks, nozzle configurations :
-  - 1x front
-  - 1x down
-  - 2x lateral
-  - 2x lateral 45°
-  - 2x lateral + 1x down
-  - 2x lateral 45° + 1x down
-- RV-105 block variations, nozzle configurations :
-  - 1x down
-  - 2x lateral
-  - 2x lateral 45°
-  - 2x lateral + 1x down
-  - 2x lateral 45° + 1x down
-  - 2x nozzles 45° + 1x down + 1x up
-  - 2x lateral + 2x front
-- 4 kN RCS blocks, nozzle configurations :
-  - 1x front
-  - 1x down (90° angle)
-  - 2x lateral
-  - 2x lateral 45°
-  - 2x lateral + 2x front
-- Aerodynamic 5-ways block
-- Large RCS LFO blocks
+- A part pack of RCS thrusters, MP tanks and orbital MP engines :
+  - RCS options earlier in the tech tree
+  - Decrease of stock MP tanks dry mass
+  - Rebalance the ISP of MP engines and RCS blocks
+  - Monopropellant tanks from RLA Stockalike
+  - Orbital MP engines from RLA Stockalike
+  - 0.25 kN RCS blocks, nozzle configurations :
+    - 1x front
+    - 1x down
+    - 2x lateral
+    - 2x lateral 45°
+    - 2x lateral + 1x down
+    - 2x lateral 45° + 1x down
+  - RV-105 block variations, nozzle configurations :
+    - 1x down
+    - 2x lateral
+    - 2x lateral 45°
+    - 2x lateral + 1x down
+    - 2x lateral 45° + 1x down
+    - 2x nozzles 45° + 1x down + 1x up
+    - 2x lateral + 2x front
+  - 4 kN RCS blocks, nozzle configurations :
+    - 1x front
+    - 1x down (90° angle)
+    - 2x lateral
+    - 2x lateral 45°
+    - 2x lateral + 2x front
+  - Aerodynamic 5-ways block
+  - Large RCS LFO blocks
