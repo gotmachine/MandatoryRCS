@@ -9,7 +9,7 @@ This plugin revisit the balance between the overpowered reaction wheels and RCS 
 - Full torque when SAS "Stability mode" is turned on.
 - Full torque when the vessel is pointed toward the SAS selection.
 - Torque output is affected by the vessel angular velocity : the faster the vessel rotate, the weaker reaction wheels are.
-- Hiding of irrelevant reactions wheels right-click menu options.
+- Hiding of irrelevant reaction wheels right-click menu options and action groups.
 
 #### Rotation persistence trough timewarp and reloading
 - Timewarping will not stop the vessel from rotating.
