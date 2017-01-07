@@ -15,6 +15,7 @@ namespace MandatoryRCS
         {
             GameEvents.onSetSpeedMode.Add(onSetSpeedMode);
             GameEvents.onVesselChange.Add(onVesselChange);
+            GameEvents.onVesselStandardModification.Add(onVesselStandardModification);
             vesselLoadOnSceneChange = true;
         }
 
@@ -26,6 +27,12 @@ namespace MandatoryRCS
                 FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleRotation>().First().vesselSASHasChanged = true;
                 vesselLoadOnSceneChange = false;
             }
+        }
+
+        // Update the total reaction wheels torque capacity for the vessel
+        private void onVesselStandardModification(Vessel v)
+        {
+            v.vesselModules.OfType<VesselModuleRotation>().First().updateWheelsTotalMaxTorque = true;
         }
 
         // Detect active vessel change when switching vessel in the physics bubble
@@ -44,6 +51,7 @@ namespace MandatoryRCS
         {
             GameEvents.onSetSpeedMode.Remove(onSetSpeedMode);
             GameEvents.onVesselChange.Remove(onVesselChange);
+            GameEvents.onVesselStandardModification.Add(onVesselStandardModification);
         }
     }
 }

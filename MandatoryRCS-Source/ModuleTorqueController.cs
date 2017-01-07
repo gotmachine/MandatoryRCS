@@ -29,9 +29,11 @@ namespace MandatoryRCS
         public float maxRollTorque;
         public float maxPitchTorque;
         public float maxYawTorque;
+        private float physicsTorqueFactor = 1.0f;
 
         public void Start()
         {
+
             // Get the part reaction wheel module
             rwmodule = part.Modules.GetModule<ModuleReactionWheel>();
             maxRollTorque = rwmodule.RollTorque;
@@ -76,37 +78,55 @@ namespace MandatoryRCS
 
             // When SAS is enabled and is in "target" mode (not stability assist), enable torque if the target is near. 
             // Purpose : lower RCS fuel consumption and ability to keep the vessel in a direction (example : keep ship on node target during a LV-N long burn without wasting tons of MonoPropellant)
-            if (this.vessel.Autopilot.Enabled && !(this.vessel.Autopilot.Mode.Equals(VesselAutopilot.AutopilotMode.StabilityAssist)))
+            if (this.vessel.Autopilot.Enabled)
             {
-                // 1.0 = toward target, 0.0 = target is at a 90° angle
-                float orientationDiff = Math.Max(Vector3.Dot(this.vessel.Autopilot.SAS.targetOrientation.normalized, this.vessel.GetTransform().up.normalized), 0);
-
-                // Torque output is maximal when on target and decrease to zero quickly
-                float torqueRatio = Math.Max(torqueOutput.Evaluate(orientationDiff), 0);
-
-                // Disable the RW instead of applying zero torque because otherwise the SAS will still find a bit of "magical torque" out of nowhere...
-                if (torqueRatio < Single.Epsilon)
+                if (!(this.vessel.Autopilot.Mode.Equals(VesselAutopilot.AutopilotMode.StabilityAssist)))
                 {
-                    rwmodule.enabled = false;
-                    rwmodule.isEnabled = false;
+                    // 1.0 = toward target, 0.0 = target is at a 90° angle
+                    float orientationDiff = Math.Max(Vector3.Dot(this.vessel.Autopilot.SAS.targetOrientation.normalized, this.vessel.GetTransform().up.normalized), 0);
+
+                    // Torque output is maximal when on target and decrease to zero quickly
+                    float torqueFactor = Math.Max(torqueOutput.Evaluate(orientationDiff), 0);
+
+                    // Disable the RW instead of applying zero torque because otherwise the SAS will still find a bit of "magical torque" out of nowhere...
+                    if (torqueFactor < Single.Epsilon)
+                    {
+                        rwmodule.RollTorque = 0;
+                        rwmodule.PitchTorque = 0;
+                        rwmodule.YawTorque = 0;
+                        rwmodule.enabled = false;
+                        rwmodule.isEnabled = false;
+                    }
+                    else
+                    {
+                        physicsTorqueFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().wheelsPhysicsTorqueFactor;
+                        rwmodule.enabled = true;
+                        rwmodule.isEnabled = true;
+                        rwmodule.RollTorque = maxRollTorque * torqueFactor * physicsTorqueFactor;
+                        rwmodule.PitchTorque = maxPitchTorque * torqueFactor * physicsTorqueFactor;
+                        rwmodule.YawTorque = maxYawTorque * torqueFactor * physicsTorqueFactor;
+                    }
                 }
                 else
                 {
+                    // Enable torque when SAS is in stability assist mode
+                    physicsTorqueFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().wheelsPhysicsTorqueFactor;
                     rwmodule.enabled = true;
                     rwmodule.isEnabled = true;
-                    rwmodule.RollTorque = maxRollTorque * torqueRatio;
-                    rwmodule.PitchTorque = maxPitchTorque * torqueRatio;
-                    rwmodule.YawTorque = maxYawTorque * torqueRatio;
+                    rwmodule.RollTorque = maxRollTorque * physicsTorqueFactor;
+                    rwmodule.PitchTorque = maxPitchTorque * physicsTorqueFactor;
+                    rwmodule.YawTorque = maxYawTorque * physicsTorqueFactor;
                 }
+
             }
             else
             {
-                // Enable torque when SAS is in stability assist mode
-                rwmodule.enabled = true;
-                rwmodule.isEnabled = true;
-                rwmodule.RollTorque = maxRollTorque;
-                rwmodule.PitchTorque = maxPitchTorque;
-                rwmodule.YawTorque = maxYawTorque;
+                // Disable torque when SAS is disabled
+                rwmodule.RollTorque = 0;
+                rwmodule.PitchTorque = 0;
+                rwmodule.YawTorque = 0;
+                rwmodule.enabled = false;
+                rwmodule.isEnabled = false;
             }
         }
     }

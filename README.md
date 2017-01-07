@@ -5,20 +5,22 @@ This plugin revisit the balance between the overpowered reaction wheels and RCS 
 ## Features
 
 #### Reaction wheels nerf
-- Reaction wheels provide no torque on pilot or SAS rotation requests.
-- Reaction wheels provide full torque when SAS "Stability mode" is turned on.
-- Reaction wheels provide full torque when the vessel is pointed toward the SAS selection.
+- No torque provided on pilot or SAS rotation requests.
+- Full torque when SAS "Stability mode" is turned on.
+- Full torque when the vessel is pointed toward the SAS selection.
+- Torque output is affected by the vessel angular velocity : the faster the vessel rotate, the weaker reaction wheels are.
+- Hiding of irrelevant reactions wheels right-click menu options.
 
 #### Rotation persistence trough timewarp and reloading
 - Timewarping will not stop the vessel from rotating.
 - Rotation is restored after timewarping, switching vessels or reloading.
-- Rotation is not continuously calculated for unloaded vessels, for minimal performance impact.
+- Rotation is not continuously calculated for unloaded (on rails) vessels, for minimal performance impact.
 
 #### SAS autopilot persistence trough timewarp and reloading
 - The vessel will keep its orientation toward the SAS selection when timewarping, switching vessels or reloading.
 - The SAS selection is remembered and restored when switching vessels or reloading.
 
-## Instructions
+## Instructions & notes
 
 #### Requirements
 The plugin **requires the ModuleManager plugin** to work. You can download it [here](http://forum.kerbalspaceprogram.com/index.php?/topic/50533-121-module-manager-275-november-29th-2016-better-late-than-never/)
@@ -35,23 +37,37 @@ Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 - [RLA StockAlike](https://github.com/deimos790/RLA_Continued) ([Pictures](https://imgur.com/a/xJFxC)) - A light part packs featuring (among other things) some super useful RCS thrusters, monopropellant tanks and engines.
 
 ## Thanks
-@MarkusA380 for figuring out everything needed to to make vessels turn and turn around, you saved me a lot of time !
+@MarkusA380 for figuring out how to make vessels rotate, you saved me a lot of time !
 The whole KSP community for its awesomeness !
 
 ## Licensing
 This masterful work of art is released under the [unlicense](http://unlicense.org/). So public domain, feel free to do anything, especially updating this plugin if I'm not around.
 
+## Changelog and bugs
+
+#### Known bugs and glitches
+- Irrelevant reaction wheels action group options are still present
+
+#### v1.0-pre2 for KSP 1.2.2
+- (feature) The torque output from reaction wheels is now affected by the vessel angular velocity : the torque output decrease when the angular velocity increase, down to a minimum of 5% when the angular velocity reach 45° / second.
+- (bugfix) Fixed reaction wheels providing a bit of torque when switching SAS from stability assist mode to a target hold mode after loading a vessel (fixed by forcing module desactivation every fixedupdate)
+- (bugfix) Fixed SAS overshooting its target when using RCS (Fixed by explicitly setting reaction wheels torque to 0 when the module is disabled)
+- (bugfix) Unexpectedly fixed vessels getting some roll velocity when loading / getting out of timewarp, probably because of one of the above fix
+
+#### v1.0-pre1 for KSP 1.2.2
+Initial release
+
 ## Perhaps planned features
 
-#### Configuration options 
+#### Ingame settings in the difficulty options menu
 
-
-#### Rewrite / overhaul of the reaction wheels nerf
-- Reaction wheels can't be used to "snap" to a SAS selection, they provide torque only when the SAS selection has allready been reached.
+#### Modification of the reaction wheels nerf
 - Make reaction wheels able to "help" RCS thrusters by providing torque when they are in use, lowering the RCS fuel consumption.
 
-#### An (optional) part set of RCS thrusters and monopropellant tanks
-- MonoPropellant tanks from RLA Stockalike
+#### An (optional) part set of RCS thrusters, MP tanks and orbital MP engines
+- Decrease of stock MP tanks dry mass
+- Slight increase of the ISP of MP engines and RCS blocks
+- Monopropellant tanks from RLA Stockalike
 - Orbital MP engines from RLA Stockalike
 - 0.25 kN RCS blocks, nozzle configurations :
   - 1x front
@@ -76,8 +92,3 @@ This masterful work of art is released under the [unlicense](http://unlicense.or
   - 2x lateral + 2x front
 - Aerodynamic 5-ways block
 - Large RCS LFO blocks
-
-## Changelog
-
-#### v1.0-pre1 for KSP 1.2.2
-Initial release

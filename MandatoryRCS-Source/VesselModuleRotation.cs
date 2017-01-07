@@ -20,7 +20,9 @@ namespace MandatoryRCS
     public class VesselModuleRotation : VesselModule
     {
         private const float lowVelocityThreesold = 0.025f;
-        
+        private const float wheelsMaxAngularVelocity = 0.785f; // Max angular velocity reaction wheels can fight against (rad/s), 0.785 = 45°/sec
+        private const float wheelsMinTorqueFactor = 0.05f; // Reaction wheels torque output at max angular velocity (%)
+
         [KSPField(isPersistant = true)]
         public Vector3 angularVelocity;
 
@@ -56,6 +58,15 @@ namespace MandatoryRCS
         private double lastManeuverParameters;
         private object lastTarget = null;
         public int autopilotContextCurrent;
+
+        // Store total torque avaible from the vessel reactions wheels
+        public float wheelsTotalMaxTorque;
+        public float wheelsPhysicsTorqueFactor = 1.0f;
+        public bool updateWheelsTotalMaxTorque = true;
+
+        //protected override void OnStart()
+        //{
+        //}
 
         private void FixedUpdate()
         {
@@ -136,35 +147,23 @@ namespace MandatoryRCS
                         }
                     }
 
-                    // Saving angular velocity, SAS mode and checking if pointing toward target
-                    // Do it in an else because some fixedupdate can happen before ?
+                    // Saving angular velocity, SAS mode, calculate reaction wheels torque and check target hold status
                     SaveOffRailsStatus();
                 }
             }
-
-            // Saving the currrent target
-            lastTarget = Vessel.targetObject;
-            // Saving the current autopilot context
-            autopilotContext = autopilotContextCurrent;
-            // Saving the maneuver vector magnitude
-            if (Vessel.patchedConicSolver != null)
-            {
-                if (Vessel.patchedConicSolver.maneuverNodes.Count > 0) 
-                {
-                    lastManeuverParameters = Vessel.patchedConicSolver.maneuverNodes[0].DeltaV.magnitude + Vessel.patchedConicSolver.maneuverNodes[0].UT; 
-                }
-            }
+            // Saving this FixedUpdate target, autopilot context and maneuver node, to check if they have changed in the next FixedUpdate
+            SaveLastUpdateStatus();
         }
 
         // Vessel is leaving physics simulation
-        // This is called only when timewarping (not on vessel unload)
+        // This is called only when timewarping but not on vessel unload
         public override void OnGoOnRails()
         {
             // Debug.Log("[US] " + Vessel.vesselName + " going ON rails, on target ? " + autopilotTargetHold + ", autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext + ", angvel=" + angularVelocity.magnitude);
         }
 
         // Vessel is entering physics simulation, either by being loaded or getting out of timewarp
-        // Don't restore rotation/angular velocity here because the vessel isn't fully loaded
+        // Don't restore rotation/angular velocity here because the vessel/scene isn't fully loaded
         // Mark it to be done in a latter FixedUpdate, where we can check for FlightGlobals.ready
         public override void OnGoOffRails()
         {
@@ -190,7 +189,8 @@ namespace MandatoryRCS
                 p.GetComponent<Rigidbody>().AddTorque(rotation * angularVelocity, ForceMode.VelocityChange);
                 p.GetComponent<Rigidbody>().AddForce(Vector3.Cross(rotation * angularVelocity, (p.transform.position - COM)), ForceMode.VelocityChange);
 
-                // This should (?) be done like this but I can't find how to convert the ForceMode.VelocityChange value into ForceMode.Force
+                // Doing this trough rigidbody is depreciated but I can't find a reliable way to use the 1.2 part.addforce/addtorque so they provide reliable results
+                // see 1.2 patchnotes and unity docs for ForceMode.VelocityChange/ForceMode.Force
                 // p.AddTorque((rotation * angularVelocity) / (p.resourceMass + p.mass));
                 // p.AddForce(Vector3.Cross(rotation * angularVelocity, (p.transform.position - COM)) / (p.resourceMass + p.mass));
             }
@@ -216,6 +216,18 @@ namespace MandatoryRCS
             Vessel.SetRotation(Quaternion.AngleAxis(angularVelocity.magnitude * TimeWarp.CurrentRate, Vessel.ReferenceTransform.rotation * angularVelocity) * Vessel.transform.rotation, true);
         }
 
+        private bool RestoreSASMode(int mode)
+        {
+            if (Vessel.Autopilot.Enabled)
+            {
+                return Vessel.Autopilot.SetMode((VesselAutopilot.AutopilotMode)mode);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         private void SaveOffRailsStatus()
         {
             // Saving the current angular velocity, zeroing it if negligeable
@@ -228,11 +240,26 @@ namespace MandatoryRCS
                 angularVelocity = Vessel.angularVelocity;
             }
 
+            // The vessel has been loaded or changed (onVesselStandardModification), update the avaible max torque from reaction wheels
+            if (updateWheelsTotalMaxTorque)
+            {
+                wheelsTotalMaxTorque = 0.0f;
+                foreach (ModuleTorqueController mtc in Vessel.FindPartModulesImplementing<ModuleTorqueController>())
+                {
+                    wheelsTotalMaxTorque += mtc.maxPitchTorque; // Values for pitch/roll/yaw are usually the same
+                }
+                updateWheelsTotalMaxTorque = false;
+            }
+
+            // Determine the wheelsPhysicsTorqueFactor
+            wheelsPhysicsTorqueFactor = Math.Max(1.0f - Math.Min((angularVelocity.magnitude * wheelsMaxAngularVelocity), 1.0f), wheelsMinTorqueFactor);
+
             // Checking if the autopilot hold mode should be enabled
             if (Vessel.Autopilot.Enabled
                 && !(Vessel.Autopilot.Mode.Equals(VesselAutopilot.AutopilotMode.StabilityAssist))
+                && (wheelsTotalMaxTorque > Single.Epsilon) // We have some reaction wheels
                 && angularVelocity.magnitude < lowVelocityThreesold * 2 // The vessel isn't rotating too much
-                && Math.Max(Vector3.Dot(Vessel.Autopilot.SAS.targetOrientation.normalized, Vessel.GetTransform().up.normalized), 0) > 0.98f) // 1.0 = toward target, 0.0 = target is at a 90° angle, previously 0.95
+                && Math.Max(Vector3.Dot(Vessel.Autopilot.SAS.targetOrientation.normalized, Vessel.GetTransform().up.normalized), 0) > 0.975f) // 1.0 = toward target, 0.0 = target is at a 90° angle, previously 0.95
             {
                 autopilotTargetHold = true;
             }
@@ -245,17 +272,20 @@ namespace MandatoryRCS
             autopilotMode = (int)Vessel.Autopilot.Mode;
         }
 
-        private bool RestoreSASMode(int mode)
+        private void SaveLastUpdateStatus()
         {
-            if (Vessel.Autopilot.Enabled)
+            // Saving the currrent target
+            lastTarget = Vessel.targetObject;
+            // Saving the current autopilot context
+            autopilotContext = autopilotContextCurrent;
+            // Saving the maneuver vector magnitude
+            if (Vessel.patchedConicSolver != null)
             {
-                return Vessel.Autopilot.SetMode((VesselAutopilot.AutopilotMode)mode);
+                if (Vessel.patchedConicSolver.maneuverNodes.Count > 0)
+                {
+                    lastManeuverParameters = Vessel.patchedConicSolver.maneuverNodes[0].DeltaV.magnitude + Vessel.patchedConicSolver.maneuverNodes[0].UT;
+                }
             }
-            else
-            {
-                return false;
-            }
-
         }
 
         private bool TargetHoldValidity()
