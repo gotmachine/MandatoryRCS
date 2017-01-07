@@ -8,9 +8,8 @@ using UnityEngine;
 // - OK - Fix maneuver sas hold not being reset if maneuver node is modified during warp
 // - OK - Restore SAS selection on loading
 // - OK - Restore SAS selection on switching vessels in timewarp
-// - Adjust SAS Hold conditions
+// - OK - Adjust SAS Hold conditions
 // - TO TEST - Disable everything on prelaunch / landed / splashed
-// - Add RW torque conditions to SAS hold ?
 // - Fix camera rotating when timewarping, need to find a reproductible case
 // - use part.addforce instead of part.rigidbody.addforce, see KSP1.2 patchnotes --> not sure this is a good idea and things seemsto work fine as they are
 
@@ -191,8 +190,6 @@ namespace MandatoryRCS
 
                 // Doing this trough rigidbody is depreciated but I can't find a reliable way to use the 1.2 part.addforce/addtorque so they provide reliable results
                 // see 1.2 patchnotes and unity docs for ForceMode.VelocityChange/ForceMode.Force
-                // p.AddTorque((rotation * angularVelocity) / (p.resourceMass + p.mass));
-                // p.AddForce(Vector3.Cross(rotation * angularVelocity, (p.transform.position - COM)) / (p.resourceMass + p.mass));
             }
         }
 

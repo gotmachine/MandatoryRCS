@@ -64,6 +64,12 @@ namespace MandatoryRCS
                 }
                 // Debug.Log("[MTC] RW Events : guiName=" + e.guiName + ", name=" + e.name + ", guiActive=" + e.guiActive + ", guiActiveEditor=" + e.guiActiveEditor);
             }
+            foreach (BaseAction a in rwmodule.Actions)
+            {
+                a.active = false;
+                // Debug.Log("[MTC] RW Actions : guiName=" + a.guiName + ", name=" + a.name + ", active=" + a.active);
+            }
+
         }
 
         public void FixedUpdate()

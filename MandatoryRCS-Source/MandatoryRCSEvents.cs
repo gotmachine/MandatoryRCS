@@ -51,7 +51,7 @@ namespace MandatoryRCS
         {
             GameEvents.onSetSpeedMode.Remove(onSetSpeedMode);
             GameEvents.onVesselChange.Remove(onVesselChange);
-            GameEvents.onVesselStandardModification.Add(onVesselStandardModification);
+            GameEvents.onVesselStandardModification.Remove(onVesselStandardModification);
         }
     }
 }
