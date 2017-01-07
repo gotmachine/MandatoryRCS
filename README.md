@@ -26,7 +26,10 @@ Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 ### Licensing
 This is free and unencumbered software released into the public domain.
 
-## Planned features
+## Perhaps planned features
+### Rewrite / overhaul of the reaction wheels nerf
+- Reaction wheels can't be used to "snap" to a SAS selection, they provide torque only when the SAS selection has allready been reached.
+- Make reaction wheels able to "help" RCS trusters by providing torque when they are in use, lowering the RCS fuel consumption.
 ### An (optional) part set of RCS thrusters and monopropellant tanks
 - MonoPropellant tanks from RLA Stockalike
 - Orbital MP engines from RLA Stockalike
@@ -53,7 +56,3 @@ This is free and unencumbered software released into the public domain.
   - 2x lateral + 2x front
 - Aerodynamic 5-ways block
 - Large RCS LFO blocks
-
-### Rewrite / overhaul of the reaction wheels nerf
-- Reaction wheels can't be used to "snap" to a SAS selection, they provide torque only when the SAS selection has allready been reached.
-- Make reaction wheels able to "help" RCS trusters by providing torque when they are in use, lowering the RCS fuel consumption.
