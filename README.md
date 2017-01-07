@@ -1,6 +1,6 @@
 # MandatoryRCS
 
-This plugin revisit the balance between the overpowered reaction wheels and RCS thrusters which are useless outside of docking situations. It does not propose a more realistic simulation of reaction wheels but is collection of tweaks aimed at limiting their functions and balancing the gameplay. Reaction wheels are turned into stabilizers, preventing your vessel to spin out of control and keeping it pointed at the direction you choose in the SAS autopilot. But you can't use them to initiate a rotation, this mean that you always need a few RCS thrusters to be able to control your vessel orientation.
+This plugin revisit the balance between the overpowered reaction wheels and RCS thrusters which are useless outside of docking situations. It does not propose a more realistic simulation of reaction wheels but is a collection of tweaks aimed at limiting their functions and balancing the gameplay. Reaction wheels are turned into stabilizers, preventing your vessel to spin out of control and keeping it pointed at the direction you choose in the SAS autopilot. But you can't use them to initiate a rotation, this mean that you always need a few RCS thrusters to be able to control your vessel orientation.
 
 ## Features
 
@@ -22,6 +22,9 @@ This plugin revisit the balance between the overpowered reaction wheels and RCS 
 
 ## Instructions & notes
 
+#### Download & source
+[Get the latest release from github](https://github.com/gotmachine/MandatoryRCS/releases)
+
 #### Requirements
 The plugin **requires the ModuleManager plugin** to work. You can download it [here](http://forum.kerbalspaceprogram.com/index.php?/topic/50533-121-module-manager-275-november-29th-2016-better-late-than-never/)
 
@@ -29,12 +32,12 @@ The plugin **requires the ModuleManager plugin** to work. You can download it [h
 Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 
 #### Incompatibilities
-- [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - Will probably mess up the reaction wheels. Features overlap anyway so there is no point keeping it.
+- [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - Will mess up the reaction wheels.
 - [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) - Does more or less the same thing that this plugin. Bad thing will happen if you keep this one.
 
 #### Recommandations
 - [RCS Build Aid](https://github.com/m4v/RCSBuildAid) ([Forum post](http://forum.kerbalspaceprogram.com/index.php?/topic/33124-12-rcs-build-aid-v091/)) - Editor plugin to help you place your RCS thrusters efficiently.
-- [RLA StockAlike](https://github.com/deimos790/RLA_Continued) ([Pictures](https://imgur.com/a/xJFxC)) - A light part packs featuring (among other things) some super useful RCS thrusters, monopropellant tanks and engines.
+- [RLA StockAlike](https://github.com/deimos790/RLA_Continued) ([Pictures](https://imgur.com/a/xJFxC)) - A light part packs featuring (among other things) some super useful small RCS thrusters, monopropellant tanks and engines.
 
 ## Thanks
 @MarkusA380 for figuring out how to make vessels rotate, you saved me a lot of time !
