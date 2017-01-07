@@ -4,29 +4,29 @@ This plugin revisit the balance between the overpowered reaction wheels and RCS 
 
 ## Features
 
-### Reaction wheels nerf
+#### Reaction wheels nerf
 - Reaction wheels provide no torque on pilot or SAS rotation requests.
 - Reaction wheels provide full torque when SAS "Stability mode" is turned on.
 - Reaction wheels provide full torque when the vessel is pointed toward the SAS selection.
 
-### Rotation persistence trough timewarp and reloading
+#### Rotation persistence trough timewarp and reloading
 - Timewarping will not stop the vessel from rotating.
 - Rotation is restored after timewarping, switching vessels or reloading.
 - Rotation is not continuously calculated for unloaded vessels, for minimal performance impact.
 
-### SAS autopilot persistence trough timewarp and reloading
+#### SAS autopilot persistence trough timewarp and reloading
 - The vessel will keep its orientation toward the SAS selection when timewarping, switching vessels or reloading.
 - The SAS selection is remembered and restored when switching vessels or reloading.
 
 ## Notes
 
-### Requirements
-The plugin require ModuleManager to work. You can download it [here](http://forum.kerbalspaceprogram.com/index.php?/topic/50533-121-module-manager-275-november-29th-2016-better-late-than-never/)
+#### Requirements
+The plugin requires the ModuleManager plugin to work. You can download it [here](http://forum.kerbalspaceprogram.com/index.php?/topic/50533-121-module-manager-275-november-29th-2016-better-late-than-never/)
 
-### Installation
+#### Installation
 Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 
-### Incompatibilities
+#### Incompatibilities
 - [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - May work but will probably mess up the reaction wheels. Features overlap anyway so there is no point keeping it.
 - [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) - Does more or less the same thing that this plugin. Bad thing will happen if you keep this one.
 
@@ -34,16 +34,19 @@ Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 @MarkusA380 for figuring out everything needed to to make vessel turn and turn around, you saved me a lot of time !
 The whole KSP community for its awesomeness !
 
-### Licensing
+#### Licensing
 This masterful work of art is released under the [unlicense](http://unlicense.org/). So public domain.
 
 ## Perhaps planned features
 
-### Rewrite / overhaul of the reaction wheels nerf
+#### Configuration options 
+
+
+#### Rewrite / overhaul of the reaction wheels nerf
 - Reaction wheels can't be used to "snap" to a SAS selection, they provide torque only when the SAS selection has allready been reached.
 - Make reaction wheels able to "help" RCS thrusters by providing torque when they are in use, lowering the RCS fuel consumption.
 
-### An (optional) part set of RCS thrusters and monopropellant tanks
+#### An (optional) part set of RCS thrusters and monopropellant tanks
 - MonoPropellant tanks from RLA Stockalike
 - Orbital MP engines from RLA Stockalike
 - 0.25 kN RCS blocks, nozzle configurations :
@@ -72,5 +75,5 @@ This masterful work of art is released under the [unlicense](http://unlicense.or
 
 ## Changelog
 
-#### v1.0-pre1
+#### v1.0-pre1 for KSP 1.2.2
 Initial release
