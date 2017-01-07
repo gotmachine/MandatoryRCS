@@ -29,7 +29,7 @@ The plugin **requires the ModuleManager plugin** to work. You can download it [h
 Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 
 #### Incompatibilities
-- [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - May work but will probably mess up the reaction wheels. Features overlap anyway so there is no point keeping it.
+- [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - Will probably mess up the reaction wheels. Features overlap anyway so there is no point keeping it.
 - [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) - Does more or less the same thing that this plugin. Bad thing will happen if you keep this one.
 
 #### Recommandations
