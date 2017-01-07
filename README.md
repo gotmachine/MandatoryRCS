@@ -41,6 +41,9 @@ Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 - [RCS Build Aid](https://github.com/m4v/RCSBuildAid) ([Forum post](http://forum.kerbalspaceprogram.com/index.php?/topic/33124-12-rcs-build-aid-v091/)) - Editor plugin to help you place your RCS thrusters efficiently.
 - [RLA StockAlike](https://github.com/deimos790/RLA_Continued) ([Pictures](https://imgur.com/a/xJFxC)) - A light part packs featuring (among other things) some super useful small RCS thrusters, monopropellant tanks and engines.
 
+## Disclaimer
+This is my first plugin and I'm far from a skilled programmer, so the code for this may be ugly. As far as I know, it does the job and doesn't break the game. However, keep in mind that *I don't really know what I'm doing*. If anybody has the time to review and comment my code, I'm open to suggestions and pull requests :)
+
 ## Thanks
 @MarkusA380 for figuring out how to make vessels rotate, you saved me a lot of time !
 
@@ -54,8 +57,11 @@ So public domain, feel free to do anything, especially updating this plugin if I
 ## Changelog and bugs
 
 #### Known bugs and glitches
-- With the SAS holding a direction, on getting out of high levels of timewarp, the SAS can sometimes apply a large roll force to the vessel. This may be problematic for large vessels, I'm trying to find a fix.
+- The reaction wheels nerf cause the SAS to overshoot when trying to stabilize roll. This is problematic for large vessels and may cause them to roll back and forth forever, I'm working on this. 
 - When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require massive modifications.
+
+#### v1.1 for KSP 1.2.2
+- (bugfix) Removed reaction wheels roll torque being nerfed by angular velocity to prevent SAS perpetual overshooting.
 
 #### v1.0 for KSP 1.2.2
 - (feature) The torque output from reaction wheels is now affected by the vessel angular velocity : the torque output decrease when the angular velocity increase, down to a minimum of 5% when the angular velocity reach 45° / second.

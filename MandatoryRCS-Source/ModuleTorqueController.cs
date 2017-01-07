@@ -108,7 +108,7 @@ namespace MandatoryRCS
                         physicsTorqueFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().wheelsPhysicsTorqueFactor;
                         rwmodule.enabled = true;
                         rwmodule.isEnabled = true;
-                        rwmodule.RollTorque = maxRollTorque * torqueFactor * physicsTorqueFactor;
+                        rwmodule.RollTorque = maxRollTorque * torqueFactor; //To prevent SAS overshooting and perpetual rolling, do not apply angular velocity nerf to roll
                         rwmodule.PitchTorque = maxPitchTorque * torqueFactor * physicsTorqueFactor;
                         rwmodule.YawTorque = maxYawTorque * torqueFactor * physicsTorqueFactor;
                     }
@@ -119,7 +119,7 @@ namespace MandatoryRCS
                     physicsTorqueFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().wheelsPhysicsTorqueFactor;
                     rwmodule.enabled = true;
                     rwmodule.isEnabled = true;
-                    rwmodule.RollTorque = maxRollTorque * physicsTorqueFactor;
+                    rwmodule.RollTorque = maxRollTorque; //To prevent SAS overshooting and perpetual rolling, do not apply angular velocity nerf to roll
                     rwmodule.PitchTorque = maxPitchTorque * physicsTorqueFactor;
                     rwmodule.YawTorque = maxYawTorque * physicsTorqueFactor;
                 }
