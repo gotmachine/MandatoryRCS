@@ -50,7 +50,7 @@ This masterful work of art is released under the [unlicense](http://unlicense.or
 - Irrelevant reaction wheels action group options are still present. Need to investigate how to hide them, not sure it's possible.
 - When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require massive modifications.
 
-#### v1.0-pre2 for KSP 1.2.2
+#### v1.0 for KSP 1.2.2
 - (feature) The torque output from reaction wheels is now affected by the vessel angular velocity : the torque output decrease when the angular velocity increase, down to a minimum of 5% when the angular velocity reach 45° / second.
 - (bugfix) Fixed reaction wheels providing a bit of torque when switching SAS from stability assist mode to a target hold mode after loading a vessel (fixed by forcing module desactivation every fixedupdate)
 - (bugfix) Fixed SAS overshooting its target when using RCS (Fixed by explicitly setting reaction wheels torque to 0 when the module is disabled)
