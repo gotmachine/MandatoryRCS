@@ -18,7 +18,7 @@ This plugin revisit the balance between the overpowered reaction wheels and RCS 
 - The vessel will keep its orientation toward the SAS selection when timewarping, switching vessels or reloading.
 - The SAS selection is remembered and restored when switching vessels or reloading.
 
-## Notes
+## Instructions
 
 #### Requirements
 The plugin requires the ModuleManager plugin to work. You can download it [here](http://forum.kerbalspaceprogram.com/index.php?/topic/50533-121-module-manager-275-november-29th-2016-better-late-than-never/)
@@ -30,12 +30,16 @@ Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 - [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - May work but will probably mess up the reaction wheels. Features overlap anyway so there is no point keeping it.
 - [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) - Does more or less the same thing that this plugin. Bad thing will happen if you keep this one.
 
-### Thanks
-@MarkusA380 for figuring out everything needed to to make vessel turn and turn around, you saved me a lot of time !
+#### Recommandations
+- [RCS Build Aid](https://github.com/m4v/RCSBuildAid) ([Forum post](http://forum.kerbalspaceprogram.com/index.php?/topic/33124-12-rcs-build-aid-v091/)) - Editor plugin to help you place your RCS thrusters efficiently.
+- [RLA StockAlike](https://github.com/deimos790/RLA_Continued) ([Pictures](https://imgur.com/a/xJFxC)) - A light part packs featuring (among other things) some super useful RCS thrusters, monopropellant tanks and engines.
+
+## Thanks
+@MarkusA380 for figuring out everything needed to to make vessels turn and turn around, you saved me a lot of time !
 The whole KSP community for its awesomeness !
 
-#### Licensing
-This masterful work of art is released under the [unlicense](http://unlicense.org/). So public domain.
+## Licensing
+This masterful work of art is released under the [unlicense](http://unlicense.org/). So public domain, feel free to do anything, especially updating this plugin if I'm not around.
 
 ## Perhaps planned features
 
