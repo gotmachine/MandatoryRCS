@@ -38,6 +38,7 @@ Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 
 ## Thanks
 @MarkusA380 for figuring out how to make vessels rotate, you saved me a lot of time !
+
 The whole KSP community for its awesomeness !
 
 ## Licensing
@@ -46,7 +47,8 @@ This masterful work of art is released under the [unlicense](http://unlicense.or
 ## Changelog and bugs
 
 #### Known bugs and glitches
-- Irrelevant reaction wheels action group options are still present
+- Irrelevant reaction wheels action group options are still present. Need to investigate how to hide them, not sure it's possible.
+- When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require massive modifications.
 
 #### v1.0-pre2 for KSP 1.2.2
 - (feature) The torque output from reaction wheels is now affected by the vessel angular velocity : the torque output decrease when the angular velocity increase, down to a minimum of 5% when the angular velocity reach 45° / second.
@@ -55,18 +57,19 @@ This masterful work of art is released under the [unlicense](http://unlicense.or
 - (bugfix) Unexpectedly fixed vessels getting some roll velocity when loading / getting out of timewarp, probably because of one of the above fix
 
 #### v1.0-pre1 for KSP 1.2.2
-Initial release
+First test build
 
 ## Perhaps planned features
 
 #### Ingame settings in the difficulty options menu
 
 #### Modification of the reaction wheels nerf
-- Make reaction wheels able to "help" RCS thrusters by providing torque when they are in use, lowering the RCS fuel consumption.
+- Make reaction wheels able to "help" RCS thrusters by providing torque when they are activated, lowering the RCS fuel consumption.
 
-#### An (optional) part set of RCS thrusters, MP tanks and orbital MP engines
+#### A part pack of RCS thrusters, MP tanks and orbital MP engines
+- RCS options earlier in the tech tree
 - Decrease of stock MP tanks dry mass
-- Slight increase of the ISP of MP engines and RCS blocks
+- Rebalance the ISP of MP engines and RCS blocks
 - Monopropellant tanks from RLA Stockalike
 - Orbital MP engines from RLA Stockalike
 - 0.25 kN RCS blocks, nozzle configurations :
