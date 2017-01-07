@@ -42,19 +42,21 @@ Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 The whole KSP community for its awesomeness !
 
 ## Licensing
-This masterful work of art is released under the [unlicense](http://unlicense.org/). So public domain, feel free to do anything, especially updating this plugin if I'm not around.
+This masterful work of art is released under the [unlicense](http://unlicense.org/). 
+
+So public domain, feel free to do anything, especially updating this plugin if I'm not around.
 
 ## Changelog and bugs
 
 #### Known bugs and glitches
-- Irrelevant reaction wheels action group options are still present. Need to investigate how to hide them, not sure it's possible.
+- With the SAS holding a direction, on getting out of high levels of timewarp, the SAS can sometimes apply a large roll force to the vessel. This may be problematic for large vessels, I'm trying to find a fix.
 - When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require massive modifications.
 
 #### v1.0 for KSP 1.2.2
 - (feature) The torque output from reaction wheels is now affected by the vessel angular velocity : the torque output decrease when the angular velocity increase, down to a minimum of 5% when the angular velocity reach 45° / second.
 - (bugfix) Fixed reaction wheels providing a bit of torque when switching SAS from stability assist mode to a target hold mode after loading a vessel (fixed by forcing module desactivation every fixedupdate)
 - (bugfix) Fixed SAS overshooting its target when using RCS (Fixed by explicitly setting reaction wheels torque to 0 when the module is disabled)
-- (bugfix) Unexpectedly fixed vessels getting some roll velocity when loading / getting out of timewarp, probably because of one of the above fix
+- (bugfix) Irrelevant reaction wheels action groups options are now hidden
 
 #### v1.0-pre1 for KSP 1.2.2
 First test build
