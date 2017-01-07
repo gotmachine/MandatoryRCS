@@ -30,14 +30,18 @@ Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 - [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - Partially realistic reaction wheels
 - [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) - Bad thing will happen if you keep this one
 
+### Thanks
+@MarkusA380 for figuring out everything needed to to make vessel turn and turn around, you saved me a lot of time !
+The whole KSP community for its awesomeness !
+
 ### Licensing
-This work of art is released under the [unlicense](http://unlicense.org/)
+This masterful work of art is released under the [unlicense](http://unlicense.org/). So public domain.
 
 ## Perhaps planned features
 
 ### Rewrite / overhaul of the reaction wheels nerf
 - Reaction wheels can't be used to "snap" to a SAS selection, they provide torque only when the SAS selection has allready been reached.
-- Make reaction wheels able to "help" RCS trusters by providing torque when they are in use, lowering the RCS fuel consumption.
+- Make reaction wheels able to "help" RCS thrusters by providing torque when they are in use, lowering the RCS fuel consumption.
 
 ### An (optional) part set of RCS thrusters and monopropellant tanks
 - MonoPropellant tanks from RLA Stockalike
