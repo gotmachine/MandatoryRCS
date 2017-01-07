@@ -27,8 +27,8 @@ The plugin require ModuleManager to work. You can download it [here](http://foru
 Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
 
 ### Incompatibilities
-- [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - Partially realistic reaction wheels
-- [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) - Bad thing will happen if you keep this one
+- [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) - May work but will probably mess up the reaction wheels. Features overlap anyway so there is no point keeping it.
+- [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) - Does more or less the same thing that this plugin. Bad thing will happen if you keep this one.
 
 ### Thanks
 @MarkusA380 for figuring out everything needed to to make vessel turn and turn around, you saved me a lot of time !
@@ -69,3 +69,8 @@ This masterful work of art is released under the [unlicense](http://unlicense.or
   - 2x lateral + 2x front
 - Aerodynamic 5-ways block
 - Large RCS LFO blocks
+
+## Changelog
+
+#### v1.0-pre1
+Initial release
