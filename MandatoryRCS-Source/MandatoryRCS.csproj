@@ -54,11 +54,11 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Debug\MandatoryRCS.dll"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Debug\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\MandatoryRCS\"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Debug\MandatoryRCS.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\MandatoryRCS\"
+    <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll"
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\MandatoryRCS\"
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\MandatoryRCS\"
 
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS\bin\Release\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\GameData\MandatoryRCS\"</PostBuildEvent>
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Release\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\GameData\MandatoryRCS\"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
