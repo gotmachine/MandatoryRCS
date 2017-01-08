@@ -57,20 +57,18 @@ So public domain, feel free to do anything, especially updating this plugin if I
 ## Changelog and bugs
 
 #### Known bugs and glitches
-- The reaction wheels nerf cause the SAS to overshoot when trying to stabilize roll. This is problematic for large vessels and may cause them to roll back and forth forever, I'm working on this. 
+- The reaction wheels nerf cause the SAS to overshoot when trying to stabilize roll. This is problematic for large vessels and may cause them to roll back and forth forever. Should be a lot better if not fixed in 1.1
 - When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require massive modifications.
 
 #### v1.1 for KSP 1.2.2
-- (bugfix) Removed reaction wheels roll torque being nerfed by angular velocity to prevent SAS perpetual overshooting.
+- (bugfix) Fixed SAS orientation being applied when not reached on initiating timewarp (woops)
+- (bugfix) Tweaked a few things to prevent the perpetual SAS roll overshoot.
 
 #### v1.0 for KSP 1.2.2
 - (feature) The torque output from reaction wheels is now affected by the vessel angular velocity : the torque output decrease when the angular velocity increase, down to a minimum of 5% when the angular velocity reach 45° / second.
 - (bugfix) Fixed reaction wheels providing a bit of torque when switching SAS from stability assist mode to a target hold mode after loading a vessel (fixed by forcing module desactivation every fixedupdate)
 - (bugfix) Fixed SAS overshooting its target when using RCS (Fixed by explicitly setting reaction wheels torque to 0 when the module is disabled)
 - (bugfix) Irrelevant reaction wheels action groups options are now hidden
-
-#### v1.0-pre1 for KSP 1.2.2
-First test build
 
 #### Perhaps planned features
 

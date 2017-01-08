@@ -19,6 +19,7 @@ namespace MandatoryRCS
     public class VesselModuleRotation : VesselModule
     {
         private const float lowVelocityThreesold = 0.025f;
+        private const float wheelsMinAngularVelocity = 0.1f; // The angular velocity after witch wheels will begin too loose torque
         private const float wheelsMaxAngularVelocity = 0.785f; // Max angular velocity reaction wheels can fight against (rad/s), 0.785 = 45°/sec
         private const float wheelsMinTorqueFactor = 0.05f; // Reaction wheels torque output at max angular velocity (%)
 
@@ -78,7 +79,7 @@ namespace MandatoryRCS
                 if (Vessel.packed) 
                 {
                     // Check if target / maneuver is modified/deleted during timewarp
-                    if (TimeWarp.WarpMode == TimeWarp.Modes.HIGH && TimeWarp.CurrentRateIndex > 0)
+                    if (autopilotTargetHold && TimeWarp.WarpMode == TimeWarp.Modes.HIGH && TimeWarp.CurrentRateIndex > 0)
                     {
                         autopilotTargetHold = TargetHoldValidity();
                     }
@@ -200,7 +201,7 @@ namespace MandatoryRCS
                 return;
             }
 
-            Vessel.SetRotation(Quaternion.FromToRotation(Vessel.GetTransform().up, AutopilotTargetDirection()) * Vessel.transform.rotation, true);
+            Vessel.SetRotation(Quaternion.FromToRotation(Vessel.GetTransform().up, AutopilotTargetDirection()) * Vessel.transform.rotation, false); // false seems to fix the "infinite roll bug"
         }
 
         private void RotatePacked()
@@ -210,7 +211,7 @@ namespace MandatoryRCS
                 return;
             }
 
-            Vessel.SetRotation(Quaternion.AngleAxis(angularVelocity.magnitude * TimeWarp.CurrentRate, Vessel.ReferenceTransform.rotation * angularVelocity) * Vessel.transform.rotation, true);
+            Vessel.SetRotation(Quaternion.AngleAxis(angularVelocity.magnitude * TimeWarp.CurrentRate, Vessel.ReferenceTransform.rotation * angularVelocity) * Vessel.transform.rotation, false); // false seems to fix the "infinite roll bug"
         }
 
         private bool RestoreSASMode(int mode)
@@ -249,7 +250,7 @@ namespace MandatoryRCS
             }
 
             // Determine the wheelsPhysicsTorqueFactor
-            wheelsPhysicsTorqueFactor = Math.Max(1.0f - Math.Min((angularVelocity.magnitude * wheelsMaxAngularVelocity), 1.0f), wheelsMinTorqueFactor);
+            wheelsPhysicsTorqueFactor = Math.Max(1.0f - Math.Min((Math.Max(angularVelocity.magnitude - wheelsMinAngularVelocity, 0.0f) * wheelsMaxAngularVelocity), 1.0f), wheelsMinTorqueFactor);
 
             // Checking if the autopilot hold mode should be enabled
             if (Vessel.Autopilot.Enabled

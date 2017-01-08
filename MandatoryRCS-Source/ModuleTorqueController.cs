@@ -74,7 +74,7 @@ namespace MandatoryRCS
 
         public void FixedUpdate()
         {
-            if (!(HighLogic.LoadedSceneIsFlight && FlightGlobals.ready))
+            if (!(HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && this.vessel.loaded && !this.vessel.packed))
             {
                 return;
             }
@@ -108,7 +108,7 @@ namespace MandatoryRCS
                         physicsTorqueFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().wheelsPhysicsTorqueFactor;
                         rwmodule.enabled = true;
                         rwmodule.isEnabled = true;
-                        rwmodule.RollTorque = maxRollTorque * torqueFactor; //To prevent SAS overshooting and perpetual rolling, do not apply angular velocity nerf to roll
+                        rwmodule.RollTorque = maxRollTorque * torqueFactor * physicsTorqueFactor;
                         rwmodule.PitchTorque = maxPitchTorque * torqueFactor * physicsTorqueFactor;
                         rwmodule.YawTorque = maxYawTorque * torqueFactor * physicsTorqueFactor;
                     }
@@ -119,7 +119,7 @@ namespace MandatoryRCS
                     physicsTorqueFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().wheelsPhysicsTorqueFactor;
                     rwmodule.enabled = true;
                     rwmodule.isEnabled = true;
-                    rwmodule.RollTorque = maxRollTorque; //To prevent SAS overshooting and perpetual rolling, do not apply angular velocity nerf to roll
+                    rwmodule.RollTorque = maxRollTorque * physicsTorqueFactor;
                     rwmodule.PitchTorque = maxPitchTorque * physicsTorqueFactor;
                     rwmodule.YawTorque = maxYawTorque * physicsTorqueFactor;
                 }
