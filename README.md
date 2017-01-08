@@ -23,7 +23,7 @@ This plugin revisit the balance between the overpowered reaction wheels and RCS 
 ## Instructions & notes
 
 #### Download & source
-[Get the latest release from github](https://github.com/gotmachine/MandatoryRCS/releases/tag/v1.0)
+[Get the latest release from github](https://github.com/gotmachine/MandatoryRCS/releases/tag/v1.1)
 
 CKAN support will be added ASAP
 
