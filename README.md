@@ -23,12 +23,13 @@ This plugin revisit the balance between the overpowered reaction wheels and RCS 
 ## Instructions & notes
 
 #### Download & source
-[Get the latest release from github](https://github.com/gotmachine/MandatoryRCS/releases/tag/v1.1)
 
-CKAN support will be added ASAP
+I highly recommend that you grab it from **CKAN** !
+
+But you can also get the [latest release and source](https://github.com/gotmachine/MandatoryRCS/releases/latest) from github
 
 #### Requirements
-The plugin **requires the ModuleManager plugin** to work. You can download it [here](http://forum.kerbalspaceprogram.com/index.php?/topic/50533-121-module-manager-275-november-29th-2016-better-late-than-never/)
+This **requires the ModuleManager plugin** to work. You can download it [here](http://forum.kerbalspaceprogram.com/index.php?/topic/50533-121-module-manager-275-november-29th-2016-better-late-than-never/)
 
 #### Installation
 Nothing special, drop the "MandatoryRCS" folder in your "GameData" folder.
