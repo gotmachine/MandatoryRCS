@@ -35,6 +35,7 @@ namespace MandatoryRCS
             tc = part.Modules.GetModule<ModuleTorqueController>();
             rw = part.Modules.GetModule<ModuleReactionWheel>();
 
+
             angularVelocity = vessel.angularVelocity.magnitude;
             rollTorque = rw.RollTorque;
             pitchTorque = rw.PitchTorque;
