@@ -33,27 +33,21 @@ namespace MandatoryRCS
         private float physicsTorqueFactor = 1.0f;
 
         public Vector3 storedMomentum = Vector3.zero;
-        public float rollSaturationTimer;
-        public float pitchSaturationTimer;
-        public float yawSaturationTimer;
-        public bool rollSaturated = false;
-        public bool pitchSaturated = false;
-        public bool yawSaturated = false;
         public Vector3 saturationTorqueFactor = Vector3.zero;
 
         private static float saturationTorqueThreesold = 0.5f; // wheels begin to loose torque when saturation exceed this percentage
-        private static float saturationDuration = 10.0f; // 10 sec
+        private static float desaturationRate = 0.05f; // % of the reaction wheels maxtorque used for desaturation per second
 
         private bool callbackIsActive = false;
 
         public void Start()
         {
+            // Get the reaction wheel module
+            rwmodule = part.Modules.GetModule<ModuleReactionWheel>();
 
-            // We activate the module calculations only when in flight
+            // We so the torque calculations only when in flight
             if (HighLogic.LoadedSceneIsFlight)
             {
-                rwmodule = part.Modules.GetModule<ModuleReactionWheel>();
-
                 maxTorque.x = rwmodule.PitchTorque;
                 maxTorque.y = rwmodule.RollTorque;
                 maxTorque.z = rwmodule.YawTorque;
@@ -172,6 +166,22 @@ namespace MandatoryRCS
 
         private void ApplySaturation()
         {
+            // Apply the desaturation rate
+            Vector3 desaturation = maxTorque * desaturationRate * TimeWarp.fixedDeltaTime;
+
+            if (Math.Abs(storedMomentum.x) > desaturation.x)
+            {
+                storedMomentum.x -= Math.Sign(storedMomentum.x) * desaturation.x;
+            }
+            if (Math.Abs(storedMomentum.y) > desaturation.y)
+            {
+                storedMomentum.y -= Math.Sign(storedMomentum.y) * desaturation.y;
+            }
+            if (Math.Abs(storedMomentum.z) > desaturation.z)
+            {
+                storedMomentum.z -= Math.Sign(storedMomentum.z) * desaturation.z;
+            }
+
             // Update the momentum stored by this reaction wheel
             storedMomentum += TimeWarp.fixedDeltaTime * rwmodule.inputVector;
 
@@ -179,59 +189,6 @@ namespace MandatoryRCS
             saturationTorqueFactor.x = GetSaturatedTorque(maxTorque.x, storedMomentum.x);
             saturationTorqueFactor.y = GetSaturatedTorque(maxTorque.y, storedMomentum.y);
             saturationTorqueFactor.z = GetSaturatedTorque(maxTorque.z, storedMomentum.z);
-
-            // Check if the wheel has reached saturation
-            if (Math.Abs(storedMomentum.x) > maxTorque.x && !pitchSaturated)
-            {
-                pitchSaturated = true;
-                pitchSaturationTimer = saturationDuration;
-            }
-
-            if (Math.Abs(storedMomentum.y) > maxTorque.y && !rollSaturated)
-            {
-                rollSaturated = true;
-                rollSaturationTimer = saturationDuration;
-            }
-
-            if (Math.Abs(storedMomentum.z) > maxTorque.z && !yawSaturated)
-            {
-                yawSaturated = true;
-                yawSaturationTimer = saturationDuration;
-            }
-
-            // Desaturate the wheel when the saturation delay has expired
-            if (pitchSaturated)
-            {
-                pitchSaturationTimer -= TimeWarp.fixedDeltaTime;
-
-                if (pitchSaturationTimer < 0)
-                {
-                    pitchSaturated = false;
-                    storedMomentum.x = 0;
-                }
-            }
-
-            if (rollSaturated)
-            {
-                rollSaturationTimer -= TimeWarp.fixedDeltaTime;
-
-                if (rollSaturationTimer < 0)
-                {
-                    rollSaturated = false;
-                    storedMomentum.y = 0;
-                }
-            }
-
-            if (yawSaturated)
-            {
-                yawSaturationTimer -= TimeWarp.fixedDeltaTime;
-
-                if (yawSaturationTimer < 0)
-                {
-                    yawSaturated = false;
-                    storedMomentum.z = 0;
-                }
-            }
         }
 
         

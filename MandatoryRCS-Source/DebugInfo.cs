@@ -35,9 +35,6 @@ namespace MandatoryRCS
         [KSPField(guiActive = true, guiName = "saturationTorqueFactor")]
         public string saturationTorqueFactor;
 
-        [KSPField(guiActive = true, guiName = "rollSaturated")]
-        public bool rollSaturated;
-
 
         public void FixedUpdate()
         {
@@ -59,7 +56,6 @@ namespace MandatoryRCS
 
             inputVectorDelta = (rw.inputVector * TimeWarp.fixedDeltaTime).ToString("0.0000");
             storedMomentum = tc.storedMomentum.ToString("0.000");
-            rollSaturated = tc.rollSaturated;
             saturationTorqueFactor = tc.saturationTorqueFactor.ToString("0.000");
         }
     }
