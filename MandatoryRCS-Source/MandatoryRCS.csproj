@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DebugInfo.cs" />
+    <Compile Include="MandatoryRCSSettings.cs" />
     <Compile Include="ModuleTorqueController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MandatoryRCSEvents.cs" />

@@ -24,12 +24,29 @@ namespace MandatoryRCS
         [KSPField(guiActive = true, guiName = "yawTorque", guiFormat = "00.00")]
         public float yawTorque;
 
+
+
+        [KSPField(guiActive = true, guiName = "inputVectorDelta")]
+        public string inputVectorDelta;
+
+        [KSPField(guiActive = true, guiName = "storedMomentum")]
+        public string storedMomentum;
+
+        [KSPField(guiActive = true, guiName = "saturationTorqueFactor")]
+        public string saturationTorqueFactor;
+
+        [KSPField(guiActive = true, guiName = "rollSaturated")]
+        public bool rollSaturated;
+
+
         public void FixedUpdate()
         {
             if (!(HighLogic.LoadedSceneIsFlight && FlightGlobals.ready))
             {
                 return;
             }
+
+            
 
             vm = vessel.vesselModules.OfType<VesselModuleRotation>().First();
             tc = part.Modules.GetModule<ModuleTorqueController>();
@@ -40,6 +57,10 @@ namespace MandatoryRCS
             pitchTorque = rw.PitchTorque;
             yawTorque = rw.YawTorque;
 
+            inputVectorDelta = (rw.inputVector * TimeWarp.fixedDeltaTime).ToString("0.0000");
+            storedMomentum = tc.storedMomentum.ToString("0.000");
+            rollSaturated = tc.rollSaturated;
+            saturationTorqueFactor = tc.saturationTorqueFactor.ToString("0.000");
         }
     }
 }

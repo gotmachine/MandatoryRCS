@@ -60,7 +60,7 @@ namespace MandatoryRCS
         public int autopilotContextCurrent;
 
         // Store total torque avaible from the vessel reactions wheels
-        public float wheelsTotalMaxTorque;
+        public float wheelsTotalMaxTorque; // NOT THE TORQUE, the sum of all rw components magnitude
         public float wheelsPhysicsTorqueFactor = 1.0f;
         public bool updateWheelsTotalMaxTorque = true;
 
@@ -244,7 +244,7 @@ namespace MandatoryRCS
                 wheelsTotalMaxTorque = 0.0f;
                 foreach (ModuleTorqueController mtc in Vessel.FindPartModulesImplementing<ModuleTorqueController>())
                 {
-                    wheelsTotalMaxTorque += mtc.maxPitchTorque; // Values for pitch/roll/yaw are usually the same
+                    wheelsTotalMaxTorque += mtc.maxTorque.magnitude; // Not exact but good enough
                 }
                 updateWheelsTotalMaxTorque = false;
             }
