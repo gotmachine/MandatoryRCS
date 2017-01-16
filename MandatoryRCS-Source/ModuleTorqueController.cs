@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace MandatoryRCS
 {
+
     public class ModuleTorqueController : PartModule
     {
         public static Keyframe[] curveKeys = new Keyframe[]
@@ -25,52 +26,65 @@ namespace MandatoryRCS
 
         public static FloatCurve torqueOutput = new FloatCurve(curveKeys);
 
-        private static float realisticTorqueRatio = 0.0025f;
+        private bool isControllable;
 
         internal ModuleReactionWheel rwmodule;
+
         public Vector3 maxTorque;
-
-        private float physicsTorqueFactor = 1.0f;
-
-        public Vector3 storedMomentum = Vector3.zero;
-        public Vector3 saturationTorqueFactor = Vector3.zero;
-
-        private static float saturationTorqueThreesold = 0.5f; // wheels begin to loose torque when saturation exceed this percentage
-        private static float desaturationRate = 0.05f; // % of the reaction wheels maxtorque used for desaturation per second
-
+        private bool isOnTarget;
+        private bool pilotInput = false;
+        private float saturationFactor = 1.0f;
         private bool callbackIsActive = false;
 
         public void Start()
         {
             // Get the reaction wheel module
             rwmodule = part.Modules.GetModule<ModuleReactionWheel>();
+            // Get the module config torque value
+            maxTorque.x = rwmodule.PitchTorque;
+            maxTorque.y = rwmodule.RollTorque;
+            maxTorque.z = rwmodule.YawTorque;
 
-            // We so the torque calculations only when in flight
-            if (HighLogic.LoadedSceneIsFlight)
+            if (MandatoryRCSSettings.featureReactionWheels)
             {
-                maxTorque.x = rwmodule.PitchTorque;
-                maxTorque.y = rwmodule.RollTorque;
-                maxTorque.z = rwmodule.YawTorque;
+                // Does this RW respond to pilot/SAS input ?
+                if (MandatoryRCSSettings.customizedWheels)
+                {
+                    bool isDefinedInCFG = false;
+                    foreach (ConfigNode node in part.partInfo.partConfig.GetNodes("MODULE"))
+                    {
+                        if (node.GetValue("name") == "ModuleTorqueController")
+                        {
+                            isDefinedInCFG = node.TryGetValue("isControllable", ref isControllable);
+                            break;
+                        }
+                    }
+                    // If not defined in the module CFG, default rule is that pods and cockpits are not controllable, but RW parts and probes are.
+                    if (!isDefinedInCFG)
+                    {
+                        isControllable = (part.CrewCapacity > 0) ? false : true;
+                    }
+                }
+                else
+                {
+                    isControllable = true;
+                }
 
-                vessel.OnFlyByWire += new FlightInputCallback(UpdateTorque);
-                callbackIsActive = true;
+                // We do the torque calculations only when in flight
+                if (HighLogic.LoadedSceneIsFlight)
+                {
+                    vessel.OnFlyByWire += new FlightInputCallback(UpdateTorque);
+                    vessel.OnPreAutopilotUpdate += new FlightInputCallback(GetPilotInput);
+                    callbackIsActive = true;
+                }
             }
-
-            // Hide RW control modes and enable/disable toggle from GUI
+            // Hide RW control modes and enable/disable toggle from GUI and action groups
             TweakUI();
         }
 
-        // Apply torque in OnFlyByWire because the module FixedUpdate() is called too late, resulting in a 1 frame lag in torque updates, leading to having torque when you shouldn't.
-        private void UpdateTorque(FlightCtrlState s)
+        private void GetPilotInput(FlightCtrlState st)
         {
-            if (!(FlightGlobals.ready && this.vessel.loaded && !this.vessel.packed))
-            {
-                return;
-            }
-
-            ApplySaturation();
-
-            SetWheelsTorque();
+            pilotInput = !st.isIdle;
         }
 
         public void OnDestroy()
@@ -78,135 +92,122 @@ namespace MandatoryRCS
             if (callbackIsActive)
             {
                 vessel.OnFlyByWire -= new FlightInputCallback(UpdateTorque);
+                vessel.OnPreAutopilotUpdate -= new FlightInputCallback(GetPilotInput);
             }
         }
-
-        private void SetWheelsTorque()
+        
+        // Apply torque in OnFlyByWire because the module FixedUpdate() is called too late, resulting in a 1 frame lag in torque updates, leading to having torque when you shouldn't.
+        private void UpdateTorque(FlightCtrlState st)
         {
-            // get the vessel rotation rate ratio
-            physicsTorqueFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().wheelsPhysicsTorqueFactor;
+            if (FlightGlobals.ready && vessel.loaded && !vessel.packed)
+            {
+                // Get the saturation factor calculated from the vessel rotation
+                saturationFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().velSaturationTorqueFactor;
 
-            // On pilot rotation requests, use realistic torque output
-            // TODO : Move this to a bool PilotInput the vesselmodule so this isn't evaluated for every partmodule
-            // BEGIN MOVE
-            if (GameSettings.PITCH_UP.GetKey()
-                || GameSettings.PITCH_DOWN.GetKey()
-                || GameSettings.YAW_LEFT.GetKey()
-                || GameSettings.YAW_RIGHT.GetKey()
-                || GameSettings.ROLL_LEFT.GetKey()
-                || GameSettings.ROLL_RIGHT.GetKey())
-            {
-                SetWheelModuleTorque(Vector3.Scale(maxTorque, saturationTorqueFactor) * physicsTorqueFactor * realisticTorqueRatio);
-            }
-            else
-            {
-                // When SAS is enabled and is in "target" mode (not stability assist), enable torque if the target is near. 
-                // Purpose : lower RCS fuel consumption and ability to keep the vessel in a direction (example : keep ship on node target during a LV-N long burn without wasting tons of MonoPropellant)
-                if (this.vessel.Autopilot.Enabled)
+                // On pilot rotation requests, use nerfed torque output
+                if (pilotInput)
                 {
-                    if (!(this.vessel.Autopilot.Mode.Equals(VesselAutopilot.AutopilotMode.StabilityAssist)))
+                    SetNerfedTorque(); // SAS is disabled
+                }
+                else
+                {
+                    if (vessel.Autopilot.Enabled)
                     {
-
-                        // TODO : Move this to the vesselmodule so this isn't evaluated for every partmodule
-                        // BEGIN MOVE
-                        // 1.0 = toward target, 0.0 = target is at a 90° angle
-                        float orientationDiff = Math.Max(Vector3.Dot(this.vessel.Autopilot.SAS.targetOrientation.normalized, this.vessel.GetTransform().up.normalized), 0);
-
-                        // Torque output is maximal when on target and decrease to zero quickly
-                        float orientationTorqueFactor = Math.Max(torqueOutput.Evaluate(orientationDiff), 0);
-
-                        // END MOVE
-
-                        if (orientationTorqueFactor < Single.Epsilon)
+                        if (vessel.Autopilot.Mode.Equals(VesselAutopilot.AutopilotMode.StabilityAssist))
                         {
-                            SetWheelModuleTorque(maxTorque * physicsTorqueFactor * realisticTorqueRatio);
+                            SetStockTorque(); // SAS is in stability assist mode
                         }
                         else
                         {
-                            SetWheelModuleTorque(maxTorque * orientationTorqueFactor * physicsTorqueFactor);
+                            // SAS is in target mode, enable full torque if the target is near. 
+                            // orientationDiff : 1.0 = toward target, 0.0 = target is at a 90° angle
+                            // float orientationDiff = Math.Max(Vector3.Dot(vessel.Autopilot.SAS.targetOrientation.normalized, vessel.GetTransform().up.normalized), 0);
+                            float orientationDiff = Math.Max(Vector3.Dot(vessel.vesselModules.OfType<VesselModuleRotation>().First().targetDirection.normalized, vessel.GetTransform().up.normalized), 0);
+
+                            if (!isOnTarget && orientationDiff > 0.999f)
+                            {
+                                isOnTarget = true;
+                            }
+                            if (isOnTarget && orientationDiff < 0.90f)
+                            {
+                                isOnTarget = false;
+                            }
+
+                            if (isOnTarget)
+                            {
+                                // Torque output is maximal when on target and decrease to zero quickly according to the floatcurve
+                                float orientationTorqueFactor = Math.Max(torqueOutput.Evaluate(orientationDiff), 0);
+                                if (orientationTorqueFactor < Single.Epsilon || orientationTorqueFactor <= saturationFactor * MandatoryRCSSettings.torqueOutputFactor)
+                                {
+                                    SetNerfedTorque(); // We are locked but too far
+                                }
+                                else
+                                {
+                                    SetTargetTorque(orientationTorqueFactor); // We are locked, apply the torque curve
+                                }
+                            }
+                            else
+                            {
+                                SetNerfedTorque(); // Target hasn't been reached
+                            }
+                            
                         }
                     }
                     else
                     {
-                        // When SAS is in stability assist mode, use stock torque output
-                        SetWheelModuleTorque(Vector3.Scale(maxTorque, saturationTorqueFactor) * physicsTorqueFactor);
+                        SetNerfedTorque(); // SAS is disabled
                     }
                 }
-                else
-                {
-                    // When SAS is disabled, use realistic torque output
-                    SetWheelModuleTorque(Vector3.Scale(maxTorque, saturationTorqueFactor) * physicsTorqueFactor * realisticTorqueRatio);
-                }
             }
         }
 
-        //public void FixedUpdate()
-        //{
-        //    if (!(HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && this.vessel.loaded && !this.vessel.packed))
-        //    {
-        //        return;
-        //    }
-
-        //    ApplySaturation();
-
-        //    // Force SAS mode so reaction wheels don't respond to player input :
-        //    rwmodule.actuatorModeCycle = 0; // 0 = Normal, 1 = SAS, 2 = Pilot
-
-        //    physicsTorqueFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().wheelsPhysicsTorqueFactor;
-
-        //    SetWheelsTorque();
-        //}
-
-        private void SetWheelModuleTorque(Vector3 torque)
+        private void SetStockTorque()
         {
-            rwmodule.PitchTorque = torque.x;
-            rwmodule.RollTorque = torque.y;
-            rwmodule.YawTorque = torque.z;
+            SetWheelModuleTorque(maxTorque * saturationFactor);
         }
 
-        private void ApplySaturation()
+        private void SetNerfedTorque()
         {
-            // Apply the desaturation rate
-            Vector3 desaturation = maxTorque * desaturationRate * TimeWarp.fixedDeltaTime;
-
-            if (Math.Abs(storedMomentum.x) > desaturation.x)
+            if (isControllable)
             {
-                storedMomentum.x -= Math.Sign(storedMomentum.x) * desaturation.x;
-            }
-            if (Math.Abs(storedMomentum.y) > desaturation.y)
-            {
-                storedMomentum.y -= Math.Sign(storedMomentum.y) * desaturation.y;
-            }
-            if (Math.Abs(storedMomentum.z) > desaturation.z)
-            {
-                storedMomentum.z -= Math.Sign(storedMomentum.z) * desaturation.z;
-            }
-
-            // Update the momentum stored by this reaction wheel
-            storedMomentum += TimeWarp.fixedDeltaTime * rwmodule.inputVector;
-
-            // Update the torque reduction factor due to saturation
-            saturationTorqueFactor.x = GetSaturatedTorque(maxTorque.x, storedMomentum.x);
-            saturationTorqueFactor.y = GetSaturatedTorque(maxTorque.y, storedMomentum.y);
-            saturationTorqueFactor.z = GetSaturatedTorque(maxTorque.z, storedMomentum.z);
-        }
-
-        
-        // Simple formula to determine the torque output ratio according to a momentum threeshold
-        private float GetSaturatedTorque(float maxTorque, float storedMomentum)
-        {
-            if (maxTorque > Single.Epsilon)
-            {
-                return Math.Min((-Math.Abs(storedMomentum) + maxTorque) / (maxTorque * (1 - saturationTorqueThreesold)), 1.0f);
+                SetWheelModuleTorque(maxTorque * saturationFactor * MandatoryRCSSettings.torqueOutputFactor);
             }
             else
             {
-                return 1.0f;
+                SetWheelModuleTorque(Vector3.zero);
+            }
+        }
+
+        private void SetTargetTorque(float orientationTorqueFactor)
+        {
+            SetWheelModuleTorque(maxTorque * orientationTorqueFactor * saturationFactor);
+        }
+        
+        private void SetWheelModuleTorque(Vector3 torque)
+        {
+            if (torque.magnitude < Single.Epsilon)
+            {
+                rwmodule.RollTorque = 0;
+                rwmodule.PitchTorque = 0;
+                rwmodule.YawTorque = 0;
+                rwmodule.enabled = false; // This reduce the "residual torque effect" that is driving me nuts.
+                rwmodule.isEnabled = false;
+                rwmodule.actuatorModeCycle = 1; // This prevent some weird behaviour of the SAS causing it to be unable to use RCS properly when reaction wheels have zero torque.
+            }
+            else
+            {
+                rwmodule.PitchTorque = torque.x;
+                rwmodule.RollTorque = torque.y;
+                rwmodule.YawTorque = torque.z;
+                rwmodule.enabled = true;
+                rwmodule.isEnabled = true;
+                rwmodule.actuatorModeCycle = 0;
             }
         }
 
         // Disable all UI buttons and action groups, except the authority limiter slider.
         // RW torque can still be tweaked/disabled trough the renamed for clarity "Reaction Wheel Autority" GUI
+        // TODO : reenable Normal/SAS/Pilot mode switch if strictMode is disabled
         private void TweakUI()
         {
             if (HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor)

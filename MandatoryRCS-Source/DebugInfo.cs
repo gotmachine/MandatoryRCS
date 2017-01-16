@@ -29,12 +29,6 @@ namespace MandatoryRCS
         [KSPField(guiActive = true, guiName = "inputVectorDelta")]
         public string inputVectorDelta;
 
-        [KSPField(guiActive = true, guiName = "storedMomentum")]
-        public string storedMomentum;
-
-        [KSPField(guiActive = true, guiName = "saturationTorqueFactor")]
-        public string saturationTorqueFactor;
-
 
         public void FixedUpdate()
         {
@@ -55,8 +49,6 @@ namespace MandatoryRCS
             yawTorque = rw.YawTorque;
 
             inputVectorDelta = (rw.inputVector * TimeWarp.fixedDeltaTime).ToString("0.0000");
-            storedMomentum = tc.storedMomentum.ToString("0.000");
-            saturationTorqueFactor = tc.saturationTorqueFactor.ToString("0.000");
         }
     }
 }

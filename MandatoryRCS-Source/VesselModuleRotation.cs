@@ -60,9 +60,12 @@ namespace MandatoryRCS
         public int autopilotContextCurrent;
 
         // Store total torque avaible from the vessel reactions wheels
-        public float wheelsTotalMaxTorque; // NOT THE TORQUE, the sum of all rw components magnitude
-        public float wheelsPhysicsTorqueFactor = 1.0f;
+        public float wheelsTotalMaxTorque = 0.0f; // NOT THE TORQUE, the sum of all rw components magnitudes
+        public float velSaturationTorqueFactor = 1.0f;
         public bool updateWheelsTotalMaxTorque = true;
+
+        // SAS target direction is made available for the ModuleTorqueController
+        public Vector3 targetDirection;
 
         //protected override void OnStart()
         //{
@@ -70,97 +73,131 @@ namespace MandatoryRCS
 
         private void FixedUpdate()
         {
+            // Get the SAS target direction in any case, because ModuleTorqueControler need it
             if (Vessel.loaded)
             {
-                // Vessel is loaded but not in physics, either because 
-                // - It is in the physics bubble but in non-psysics timewarp
-                // - It has gone outside of the physics bubble
-                // - It was just loaded, is in the physics bubble and will be unpacked in a few frames
-                if (Vessel.packed) 
-                {
-                    // Check if target / maneuver is modified/deleted during timewarp
-                    if (autopilotTargetHold && TimeWarp.WarpMode == TimeWarp.Modes.HIGH && TimeWarp.CurrentRateIndex > 0)
-                    {
-                        autopilotTargetHold = TargetHoldValidity();
-                    }
-                    // We keep the vessel rotated toward the SAS target
-                    if (autopilotTargetHold) 
-                    {
-                        RotateTowardTarget();
-                    }
-                    // We aren't holding a SAS target, rotate the vessel according to its angular velocity
-                    else if (angularVelocity.magnitude > lowVelocityThreesold) 
-                    {
-                        RotatePacked();
-                    }
-                }
-                else if (FlightGlobals.ready) // The vessel is in physics simulation and fully loaded
-                {
-                    // Restoring previous SAS selection after a vessel change
-                    if (vesselSASHasChanged)
-                    {
-                        vesselSASHasChanged = false;
-                        if (!RestoreSASMode(autopilotMode))
-                        {
-                            retrySAS = true;
-                            setSASMode = autopilotMode;
-                            retrySASCount = 10;
-                        }
-                    }
+                targetDirection = AutopilotTargetDirection();
+            }
 
-                    // Restoring angular velocity or rotation after entering physics
-                    if (restoreAutopilotTarget) // Rotate to face SAS target
+            if (MandatoryRCSSettings.featureSASRotation)
+            {
+                if (Vessel.loaded)
+                {
+                    // Vessel is loaded but not in physics, either because 
+                    // - It is in the physics bubble but in non-psysics timewarp
+                    // - It has gone outside of the physics bubble
+                    // - It was just loaded, is in the physics bubble and will be unpacked in a few frames
+                    if (Vessel.packed)
                     {
-                        if (autopilotContext == autopilotContextCurrent) // Abort if the navball context (orbit/surface/target) has changed
+                        // Check if target / maneuver is modified/deleted during timewarp
+                        if (autopilotTargetHold && TimeWarp.WarpMode == TimeWarp.Modes.HIGH && TimeWarp.CurrentRateIndex > 0)
                         {
-                            // Debug.Log("[US] " + Vessel.vesselName + " going OFF rails : applying rotation toward SAS target, autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext);
+                            autopilotTargetHold = TargetHoldValidity();
+                        }
+                        // We keep the vessel rotated toward the SAS target
+                        if (autopilotTargetHold)
+                        {
                             RotateTowardTarget();
                         }
-                        restoreAutopilotTarget = false;
-                    }
-                    if (restoreAngularVelocity) // Restoring saved rotation if it was above the threesold
-                    {
-                        // Debug.Log("[US] " + Vessel.vesselName + " going OFF rails : restoring angular velocity, angvel=" + angularVelocity.magnitude);
-                        if (angularVelocity.magnitude > lowVelocityThreesold)
+                        // We aren't holding a SAS target, rotate the vessel according to its angular velocity
+                        else if (angularVelocity.magnitude > MandatoryRCSSettings.velocityThreesold)
                         {
-                            ApplyAngularVelocity();
+                            RotatePacked();
                         }
-                        restoreAngularVelocity = false;
                     }
-
-                    // Sometimes the autopilot wasn't loaded fast enough, so we retry setting the SAS mode a few times
-                    if (retrySAS)
+                    else if (FlightGlobals.ready) // The vessel is in physics simulation and fully loaded
                     {
-                        if (retrySASCount > 0)
+                        // Restoring previous SAS selection after a vessel change
+                        if (vesselSASHasChanged)
                         {
-                            if (RestoreSASMode(setSASMode))
+                            vesselSASHasChanged = false;
+                            if (!RestoreSASMode(autopilotMode))
+                            {
+                                retrySAS = true;
+                                setSASMode = autopilotMode;
+                                retrySASCount = 10;
+                            }
+                        }
+
+                        // Restoring angular velocity or rotation after entering physics
+                        if (restoreAutopilotTarget) // Rotate to face SAS target
+                        {
+                            if (autopilotContext == autopilotContextCurrent) // Abort if the navball context (orbit/surface/target) has changed
+                            {
+                                // Debug.Log("[US] " + Vessel.vesselName + " going OFF rails : applying rotation toward SAS target, autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext);
+                                RotateTowardTarget();
+                            }
+                            restoreAutopilotTarget = false;
+                        }
+                        if (restoreAngularVelocity) // Restoring saved rotation if it was above the threesold
+                        {
+                            // Debug.Log("[US] " + Vessel.vesselName + " going OFF rails : restoring angular velocity, angvel=" + angularVelocity.magnitude);
+                            if (angularVelocity.magnitude > MandatoryRCSSettings.velocityThreesold)
+                            {
+                                ApplyAngularVelocity();
+                            }
+                            restoreAngularVelocity = false;
+                        }
+
+                        // Sometimes the autopilot wasn't loaded fast enough, so we retry setting the SAS mode a few times
+                        if (retrySAS)
+                        {
+                            if (retrySASCount > 0)
+                            {
+                                if (RestoreSASMode(setSASMode))
+                                {
+                                    retrySAS = false;
+                                    // Debug.Log("[US] autopilot mode " + setSASMode + " set at count " + retrySASCount);
+                                }
+                                retrySASCount--;
+                            }
+                            else
                             {
                                 retrySAS = false;
-                                // Debug.Log("[US] autopilot mode " + setSASMode + " set at count " + retrySASCount);
+                                // Debug.Log("[US] can't set autopilot mode.");
                             }
-                            retrySASCount--;
                         }
-                        else
-                        {
-                            retrySAS = false;
-                            // Debug.Log("[US] can't set autopilot mode.");
-                        }
-                    }
 
+                        // Saving angular velocity, SAS mode, calculate reaction wheels torque and check target hold status
+                        SaveOffRailsStatus();
+                    }
+                }
+                // Saving this FixedUpdate target, autopilot context and maneuver node, to check if they have changed in the next FixedUpdate
+                SaveLastUpdateStatus();
+            }
+
+            // Rotation/SAS feature is disabled, we only update the things needed for the reaction wheels feature
+            else
+            {
+                if (Vessel.loaded && !Vessel.packed && FlightGlobals.ready)
+                {
                     // Saving angular velocity, SAS mode, calculate reaction wheels torque and check target hold status
                     SaveOffRailsStatus();
                 }
             }
-            // Saving this FixedUpdate target, autopilot context and maneuver node, to check if they have changed in the next FixedUpdate
-            SaveLastUpdateStatus();
+        }
+
+        public override void OnLoadVessel()
+        {
+            //base.OnLoadVessel();
+        }
+
+        public override void OnUnloadVessel()
+        {
+            //base.OnUnloadVessel();
+        }
+
+        public override void OnGoOnRails()
+        {
+            //base.OnGoOnRails();
         }
 
         // Vessel is leaving physics simulation
         // This is called only when timewarping but not on vessel unload
-        public override void OnGoOnRails()
-        {
-            // Debug.Log("[US] " + Vessel.vesselName + " going ON rails, on target ? " + autopilotTargetHold + ", autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext + ", angvel=" + angularVelocity.magnitude);
-        }
+        //public override void OnGoOnRails()
+        //{
+        //    // Debug.Log("[US] " + Vessel.vesselName + " going ON rails, on target ? " + autopilotTargetHold + ", autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext + ", angvel=" + angularVelocity.magnitude);
+        //}
 
         // Vessel is entering physics simulation, either by being loaded or getting out of timewarp
         // Don't restore rotation/angular velocity here because the vessel/scene isn't fully loaded
@@ -201,7 +238,7 @@ namespace MandatoryRCS
                 return;
             }
 
-            Vessel.SetRotation(Quaternion.FromToRotation(Vessel.GetTransform().up, AutopilotTargetDirection()) * Vessel.transform.rotation, false); // false seems to fix the "infinite roll bug"
+            Vessel.SetRotation(Quaternion.FromToRotation(Vessel.GetTransform().up, targetDirection) * Vessel.transform.rotation, true); // SetPos=false seems to break the game on some occasions...
         }
 
         private void RotatePacked()
@@ -211,7 +248,7 @@ namespace MandatoryRCS
                 return;
             }
 
-            Vessel.SetRotation(Quaternion.AngleAxis(angularVelocity.magnitude * TimeWarp.CurrentRate, Vessel.ReferenceTransform.rotation * angularVelocity) * Vessel.transform.rotation, false); // false seems to fix the "infinite roll bug"
+            Vessel.SetRotation(Quaternion.AngleAxis(angularVelocity.magnitude * TimeWarp.CurrentRate, Vessel.ReferenceTransform.rotation * angularVelocity) * Vessel.transform.rotation, true); // false seems to fix the "infinite roll bug"
         }
 
         private bool RestoreSASMode(int mode)
@@ -229,7 +266,7 @@ namespace MandatoryRCS
         private void SaveOffRailsStatus()
         {
             // Saving the current angular velocity, zeroing it if negligeable
-            if (Vessel.angularVelocity.magnitude < lowVelocityThreesold)
+            if (Vessel.angularVelocity.magnitude < MandatoryRCSSettings.velocityThreesold)
             {
                 angularVelocity = Vector3.zero;
             }
@@ -249,14 +286,22 @@ namespace MandatoryRCS
                 updateWheelsTotalMaxTorque = false;
             }
 
-            // Determine the wheelsPhysicsTorqueFactor
-            wheelsPhysicsTorqueFactor = Math.Max(1.0f - Math.Min((Math.Max(angularVelocity.magnitude - wheelsMinAngularVelocity, 0.0f) * wheelsMaxAngularVelocity), 1.0f), wheelsMinTorqueFactor);
+            // Determine the velocity saturation factor for reaction wheels (used by ModuleTorqueController)
+            if (MandatoryRCSSettings.velocitySaturation)
+            {
+                velSaturationTorqueFactor = Math.Max(1.0f - Math.Min((Math.Max(angularVelocity.magnitude - MandatoryRCSSettings.saturationMinAngVel, 0.0f) * MandatoryRCSSettings.saturationMaxAngVel), 1.0f), MandatoryRCSSettings.saturationMinTorqueFactor);
+            }
+            else
+            {
+                velSaturationTorqueFactor = 1.0f;
+            }
+            
 
             // Checking if the autopilot hold mode should be enabled
             if (Vessel.Autopilot.Enabled
                 && !(Vessel.Autopilot.Mode.Equals(VesselAutopilot.AutopilotMode.StabilityAssist))
                 && (wheelsTotalMaxTorque > Single.Epsilon) // We have some reaction wheels
-                && angularVelocity.magnitude < lowVelocityThreesold * 2 // The vessel isn't rotating too much
+                && angularVelocity.magnitude < MandatoryRCSSettings.velocityThreesold * 2 // The vessel isn't rotating too much
                 && Math.Max(Vector3.Dot(Vessel.Autopilot.SAS.targetOrientation.normalized, Vessel.GetTransform().up.normalized), 0) > 0.975f) // 1.0 = toward target, 0.0 = target is at a 90° angle, previously 0.95
             {
                 autopilotTargetHold = true;
@@ -409,11 +454,11 @@ namespace MandatoryRCS
                 }
             }
 
-            // This shouldn't happen
+            // 
             else
             {
                 // Abort orientation keeping
-                autopilotTargetHold = false;
+                // autopilotTargetHold = false;
                 return Vessel.GetTransform().up;
             }
 
