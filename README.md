@@ -104,3 +104,8 @@ So public domain, feel free to do anything, especially updating this plugin if I
     - 2x lateral + 2x front
   - Aerodynamic 5-ways block
   - Large RCS LFO blocks
+  
+  #### Realism notes
+  
+The way reaction wheels work with this plugin isn't realistic, but in preventing them to be used for maneuvering in space (but not for attitude control) this plugin actually is very close the reality. In real life, reaction wheels and control moment gyroscopes (CMR) can provide only very small amounts of torque. For example, the four CMR on the ISS weight about 1100 kg ([source](http://www.boeing.com/assets/pdf/defense-space/space/spacestation/systems/docs/ISS%20Motion%20Control%20System.pdf)) and provide only 0.258 kNm of torque ([source](https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20100021932.pdf)). Compare that to the 5 kNm provided by the 0.85 kg Mk1 command pod in KSP.
+  
