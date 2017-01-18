@@ -7,7 +7,7 @@ using UnityEngine;
 namespace MandatoryRCS
 {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
-    class MandatoryRCSEvents : MonoBehaviour
+    class MandatoryRCSFlightEvents : MonoBehaviour
     {
         private bool vesselLoadOnSceneChange;
 
@@ -52,6 +52,52 @@ namespace MandatoryRCS
             GameEvents.onSetSpeedMode.Remove(onSetSpeedMode);
             GameEvents.onVesselChange.Remove(onVesselChange);
             GameEvents.onVesselStandardModification.Remove(onVesselStandardModification);
+        }
+    }
+
+    [KSPAddon(KSPAddon.Startup.AllGameScenes, false)]
+    class MandatoryRCSGameScenesEvents : MonoBehaviour
+    {
+        private void Start()
+        {
+            GameEvents.onVesselSOIChanged.Add(onVesselSOIChanged);
+        }
+
+        // On SOI change, if target hold is in a body relative mode, set it to false and reset autopilot mode to stability assist
+        private void onVesselSOIChanged(GameEvents.HostedFromToAction<Vessel, CelestialBody> data)
+        {
+            if (data.host.loaded)
+            {
+                if (data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotTargetHold 
+                    && data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotMode >= 1 
+                    && data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotMode <= 6)
+                {
+                    data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotTargetHold = false;
+                    data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotMode = 0;
+                }
+            }
+            else
+            {
+                bool autopilotTargetHoldCurrent = false;
+                int autopilotModeCurrent = 0;
+                if (!data.host.protoVessel.vesselModules.GetNode("VesselModuleRotation").TryGetValue("autopilotTargetHold", ref autopilotTargetHoldCurrent))
+                { return;}
+                if (!data.host.protoVessel.vesselModules.GetNode("VesselModuleRotation").TryGetValue("autopilotMode", ref autopilotModeCurrent))
+                { return;}
+
+                if (autopilotTargetHoldCurrent
+                    && autopilotModeCurrent >= 1
+                    && autopilotModeCurrent <= 6)
+                {
+                    data.host.protoVessel.vesselModules.GetNode("VesselModuleRotation").SetValue("autopilotTargetHold", false);
+                    data.host.protoVessel.vesselModules.GetNode("VesselModuleRotation").SetValue("autopilotMode", 0);
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            GameEvents.onVesselSOIChanged.Remove(onVesselSOIChanged);
         }
     }
 }

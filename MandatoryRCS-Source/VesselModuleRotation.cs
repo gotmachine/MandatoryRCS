@@ -5,20 +5,13 @@ using System.Text;
 using UnityEngine;
 
 // TODO :
-// - OK - Fix maneuver sas hold not being reset if maneuver node is modified during warp
-// - OK - Restore SAS selection on loading
-// - OK - Restore SAS selection on switching vessels in timewarp
-// - OK - Adjust SAS Hold conditions
-// - TO TEST - Disable everything on prelaunch / landed / splashed
-// - Fix camera rotating when timewarping, need to find a reproductible case
-// - use part.addforce instead of part.rigidbody.addforce, see KSP1.2 patchnotes --> not sure this is a good idea and things seemsto work fine as they are
-
+// - Reset target hold on SOI change
 
 namespace MandatoryRCS
 {
     public class VesselModuleRotation : VesselModule
     {
-        private const float lowVelocityThreesold = 0.025f;
+        private const float lowVelocityThreesold = 0.025f; 
         private const float wheelsMinAngularVelocity = 0.1f; // The angular velocity after witch wheels will begin too loose torque
         private const float wheelsMaxAngularVelocity = 0.785f; // Max angular velocity reaction wheels can fight against (rad/s), 0.785 = 45°/sec
         private const float wheelsMinTorqueFactor = 0.05f; // Reaction wheels torque output at max angular velocity (%)
@@ -45,6 +38,9 @@ namespace MandatoryRCS
         // Apply the rotation toward the SAS selection when loading / switching vessels
         private bool restoreAutopilotTarget = false;
 
+        // Reset target hold on SOI change (for unloaded vessels)
+        //public bool unloadedSOIChanged = false;
+
         // If set true by OnVesselChange event, we will try to restore the previous SAS selection
         public bool vesselSASHasChanged = false;
 
@@ -66,10 +62,6 @@ namespace MandatoryRCS
 
         // SAS target direction is made available for the ModuleTorqueController
         public Vector3 targetDirection;
-
-        //protected override void OnStart()
-        //{
-        //}
 
         private void FixedUpdate()
         {

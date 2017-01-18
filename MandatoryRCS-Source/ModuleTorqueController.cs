@@ -5,7 +5,8 @@ using System.Text;
 using UnityEngine;
 
 // TODO :
-// - implement torque ON when RCS is ON, to reduce RCS fuel consumption
+// - Wheels saturation when landed
+// - (Maybe) Torque ON when RCS is ON, to reduce RCS fuel consumption
 
 namespace MandatoryRCS
 {
