@@ -10,7 +10,6 @@ using UnityEngine;
 
 namespace MandatoryRCS
 {
-
     public class ModuleTorqueController : PartModule
     {
         public static Keyframe[] curveKeys = new Keyframe[]

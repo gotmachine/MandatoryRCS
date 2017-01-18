@@ -68,7 +68,6 @@ namespace MandatoryRCS
             {
                 featureReactionWheels = HighLogic.CurrentGame.Parameters.CustomParams<MandatoryRCSRWSettings>().reactionWheelsNerf;
             }
-            
 
             switch (HighLogic.CurrentGame.Parameters.CustomParams<MandatoryRCSRWSettings>().torqueRatio)
             {
@@ -116,7 +115,6 @@ namespace MandatoryRCS
             {
                 firstLoad = true;
             }
-
         }
 
         private void onGameStatePostLoad(ConfigNode data) // This is called on quickloading
@@ -295,8 +293,5 @@ namespace MandatoryRCS
 
             return true;
         }
-
-
-
     }
 }

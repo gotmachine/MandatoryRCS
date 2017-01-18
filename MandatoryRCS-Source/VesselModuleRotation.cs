@@ -4,18 +4,10 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-// TODO :
-// - Reset target hold on SOI change
-
 namespace MandatoryRCS
 {
     public class VesselModuleRotation : VesselModule
     {
-        private const float lowVelocityThreesold = 0.025f; 
-        private const float wheelsMinAngularVelocity = 0.1f; // The angular velocity after witch wheels will begin too loose torque
-        private const float wheelsMaxAngularVelocity = 0.785f; // Max angular velocity reaction wheels can fight against (rad/s), 0.785 = 45°/sec
-        private const float wheelsMinTorqueFactor = 0.05f; // Reaction wheels torque output at max angular velocity (%)
-
         [KSPField(isPersistant = true)]
         public Vector3 angularVelocity;
 
@@ -37,9 +29,6 @@ namespace MandatoryRCS
 
         // Apply the rotation toward the SAS selection when loading / switching vessels
         private bool restoreAutopilotTarget = false;
-
-        // Reset target hold on SOI change (for unloaded vessels)
-        //public bool unloadedSOIChanged = false;
 
         // If set true by OnVesselChange event, we will try to restore the previous SAS selection
         public bool vesselSASHasChanged = false;
@@ -168,28 +157,6 @@ namespace MandatoryRCS
                 }
             }
         }
-
-        public override void OnLoadVessel()
-        {
-            //base.OnLoadVessel();
-        }
-
-        public override void OnUnloadVessel()
-        {
-            //base.OnUnloadVessel();
-        }
-
-        public override void OnGoOnRails()
-        {
-            //base.OnGoOnRails();
-        }
-
-        // Vessel is leaving physics simulation
-        // This is called only when timewarping but not on vessel unload
-        //public override void OnGoOnRails()
-        //{
-        //    // Debug.Log("[US] " + Vessel.vesselName + " going ON rails, on target ? " + autopilotTargetHold + ", autopilotMode=" + autopilotMode + ", targetMode=" + autopilotContext + ", angvel=" + angularVelocity.magnitude);
-        //}
 
         // Vessel is entering physics simulation, either by being loaded or getting out of timewarp
         // Don't restore rotation/angular velocity here because the vessel/scene isn't fully loaded
