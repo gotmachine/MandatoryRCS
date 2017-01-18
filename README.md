@@ -92,8 +92,9 @@ So public domain, feel free to do anything, especially updating this plugin if I
 
 - Reaction wheels saturation over time when landed.
 - (Maybe) Make reaction wheels able to "help" RCS thrusters by providing torque when they are activated, lowering the RCS fuel consumption.
+- A RCS thrusters part pack
   
-  #### Realism notes
+#### Realism notes
   
 The way reaction wheels work with this plugin isn't realistic. This said, in lowering their torque output to realistic values for maneuvering, this plugin make the playstyle a lot closer to the reality without cutting too much on playability. In real life, reaction wheels and control moment gyroscopes (CMR) can provide only very small amounts of torque. For example, each CMR on the ISS is rougly 1.2 meter wide, weight about 280 kg ([source](http://www.boeing.com/assets/pdf/defense-space/space/spacestation/systems/docs/ISS%20Motion%20Control%20System.pdf)) and provide only 0.258 kNm of torque ([source](https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20100021932.pdf)). Now compare that to the 5 kNm provided by the 0.625m, 50 kg small reaction wheel in KSP.
   
