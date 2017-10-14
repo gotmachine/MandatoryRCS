@@ -169,7 +169,7 @@ namespace MandatoryRCS
             get { return "Reaction wheels rebalance"; }
         }
 
-        [GameParameters.CustomStringParameterUI("DISABLED ", autoPersistance = = false, lines = 1)]
+        [GameParameters.CustomStringParameterUI("DISABLED ", autoPersistance = false, lines = 1)]
         public string autoDisabled = " the \"(Semi-)Saturatable Reaction Wheels\" plugin is loaded. If you want this feature, uninstall it and restart the game.";
 
         [GameParameters.CustomParameterUI("Enable reaction wheels rebalance",
