@@ -70,6 +70,10 @@ So public domain, feel free to do anything, especially updating this plugin if I
 - Getting out of timewarps with the SAS direction hold activated input a large roll "kick", most visible at high timewarp levels. I tried a lot of things to find out why this happen or fix it, and failed.
 - When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require large modifications.
 
+#### v1.3 for KSP 1.3.0
+- Recompiled for KSP 1.3.0 (thx Linuxgurugamer)
+- (bugfix) Fixed typo in settings (issue #1)
+
 #### v1.2 for KSP 1.2.2
 - (feature) Ingame settings menu with compatibility checks for SSRW and PR plugins. They can now be used alongside the plugin, incompatible features are auto-disabled.
 - (feature) Torque output on pilot/SAS input is now very low instead of disabled.
