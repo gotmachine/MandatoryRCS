@@ -152,6 +152,10 @@ namespace MandatoryRCS
         {
             get { return "MandatoryRCS"; }
         }
+        public override string DisplaySection
+        {
+            get { return "MandatoryRCS"; }
+        }
 
         public override int SectionOrder
         {
@@ -245,6 +249,10 @@ namespace MandatoryRCS
         }
 
         public override string Section
+        {
+            get { return "MandatoryRCS"; }
+        }
+        public override string DisplaySection
         {
             get { return "MandatoryRCS"; }
         }
