@@ -30,26 +30,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.0.DEVLIGHT\KSP_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.0.DEVLIGHT\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.0.DEVLIGHT\KSP_x64_Data\Managed\UnityEngine.UI.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="DebugInfo.cs" />
     <Compile Include="MandatoryRCSSettings.cs" />
     <Compile Include="ModuleTorqueController.cs" />
@@ -57,13 +37,31 @@
     <Compile Include="MandatoryRCSEvents.cs" />
     <Compile Include="VesselModuleRotation.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="System">
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\System.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml">
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\System.Xml.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\MandatoryRCS\"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal.Space.Program.v1.2.2.1622.DEV\GameData\MandatoryRCS\"
-
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Release\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\GameData\MandatoryRCS\"</PostBuildEvent>
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\Kerbal Space Program 1.3.1 DEV\GameData\MandatoryRCS\"
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal Space Program 1.3.1 DEV\GameData\MandatoryRCS\"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

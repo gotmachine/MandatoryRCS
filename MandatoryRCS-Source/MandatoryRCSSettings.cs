@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using UnityEngine;
 
 namespace MandatoryRCS
 {
   // Should be allscenes, but there is a bug if called from the main menu
   // temp fix : settings aren't available from the main menu
-    [KSPAddon(KSPAddon.Startup.AllGameScenes, false)]
+  [KSPAddon(KSPAddon.Startup.AllGameScenes, false)]
     class MandatoryRCSSettings : MonoBehaviour
     {
         // RW feature master switch
@@ -40,24 +37,22 @@ namespace MandatoryRCS
 
         private void Start()
         {
+          foreach (var a in AssemblyLoader.loadedAssemblies)
+          {
+            if (a.name == "PersistentRotation")
             {
-                foreach (var a in AssemblyLoader.loadedAssemblies)
-                {
-                    if (a.name == "PersistentRotation")
-                    {
-                        isPluginPersistentRotation = true;
-                    }
-
-                    if (a.name == "SaturatableRW")
-                    {
-                        isPluginSaturatableRW = true;
-                    }
-                }
+              isPluginPersistentRotation = true;
             }
 
-            GameEvents.onLevelWasLoaded.Add(onLevelWasLoaded);
-            GameEvents.onGameStatePostLoad.Add(onGameStatePostLoad);
-            GameEvents.OnGameSettingsApplied.Add(OnGameSettingsApplied);
+            if (a.name == "SaturatableRW")
+            {
+              isPluginSaturatableRW = true;
+            }
+          }
+
+          GameEvents.onLevelWasLoaded.Add(onLevelWasLoaded);
+          GameEvents.onGameStatePostLoad.Add(onGameStatePostLoad);
+          GameEvents.OnGameSettingsApplied.Add(OnGameSettingsApplied);
         }
 
         private void ApplySettings()
@@ -176,8 +171,8 @@ namespace MandatoryRCS
              toolTip = "Disabling will revert to the stock behaviour.")]
         public bool reactionWheelsNerf = !MandatoryRCSSettings.isPluginSaturatableRW;
 
-        [GameParameters.CustomStringParameterUI("About ", autoPersistance = false, lines = 7)]
-        public string aboutRW0 = "reduce the reaction wheels torque output on pilot or SAS rotation requests. Full torque is still provided when the SAS is standing by in \"Stability Assist\" mode or when the craft orientation is near the current SAS selection.";
+        [GameParameters.CustomStringParameterUI("About ", autoPersistance = false, lines = 6)]
+        public string aboutRW0 = "Reaction wheels force is heavily reduced on pilot & SAS rotation requests. Full force is provided if the SAS in \"Stability Assist\" mode or if you have reached the active SAS marker.";
 
         [GameParameters.CustomParameterUI("Reaction wheels SAS & pilot control",
             toolTip = "Reaction wheels torque output on pilot/SAS rotation requests :\n\n\"None\" : Reaction wheels provide only stabilization, they can't be used\nto initiate a rotation (was the default in previous versions). \n\n\"Realistic\" : Reaction wheels torque output is scaled to a somewhat realistic value\naccording their ingame weight and size.\n\n\"Easy\" : 2 times the realistic torque.\n\n\"Easier\" : 10 times the realistic torque.")]
@@ -185,7 +180,7 @@ namespace MandatoryRCS
         public enum wheelsTorqueRatio { None, Realistic, Easy, Easier }
 
         [GameParameters.CustomParameterUI("SAS & pilot control customization",
-            toolTip = "When enabled, not all reaction wheels can provide SAS & pilot control.\n\nDefault setting disable the control for all pods and cockpits and\nenable it for independant reaction wheels and probe cores. \n\n This can be overriden by explicitly defining the ModuleTorqueController\nin the part config (or with an MM patch) and adding the property\n isControllable=true/false.")]
+            toolTip = "When enabled, reaction wheels integrated in pods and cockpits can't provide SAS & pilot control,\nonly independant reaction wheels parts and probe cores can. \n\nWhen disabled, all reaction wheels can provide SAS & pilot control.\n\nThis can be overriden by explicitly defining the ModuleTorqueController\nin the part config (or with an MM patch) and adding the property\nisControllable=true/false.")]
         public bool customizedWheels = true;
 
         [GameParameters.CustomParameterUI("Enable velocity saturation",
@@ -279,7 +274,7 @@ namespace MandatoryRCS
         [GameParameters.CustomStringParameterUI("About ", autoPersistance = false, lines = 9)]
         public string aboutRSP = "This feature make the vessel rotation persistent through non-physics timewarps, when switching vessels and reloading. It also make the craft keep its orientation toward the SAS selection during timewarps. The SAS selection is remembered when switching vessels and reloading.";
 
-        [GameParameters.CustomFloatParameterUI("Stability threesold (deg/sec)", minValue = 0.25f, maxValue = 4.0f, displayFormat = "F1",
+        [GameParameters.CustomFloatParameterUI("Stability thresold (deg/sec)", minValue = 0.25f, maxValue = 4.0f, displayFormat = "F1",
              toolTip = "When the angular velocity (rotation speed) of the vessel is under this value, \nit is considered stable and will not rotate during timwarps or when unloaded.\nDefault value : 1.5 deg/sec")]
         public float velocityThreesold = 1.5f; // 0,02617 rad/s
 
