@@ -46,6 +46,7 @@ This **requires the ModuleManager plugin** to work. You can download it [here](h
 #### Incompatibilities
 - [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) : can still be used but the reaction wheels features will be automatically disabled.
 - [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) : can still be used but the SAS and rotation persistence features will be automatically disabled.
+- MechJeb, TCA and other autopilots are likely to cause various issues : first, autopilots usually expect the stock "timewarp kill rotation" behavior, the fact that this doesn't happen can cause weird behavior. Second, MandatoryRCS is build upon the stock SAS and use its state to know when reaction wheels are allowed to stabilize the vessel. Autopilots usually disable completly the stock SAS, causing reaction wheels to become useless.
 
 #### Recommendations
 - [RCS Build Aid](https://github.com/m4v/RCSBuildAid) ([Forum post](http://forum.kerbalspaceprogram.com/index.php?/topic/33124-12-rcs-build-aid-v091/)) - Editor plugin to help you place your RCS thrusters efficiently.
