@@ -32,19 +32,28 @@ namespace MandatoryRCS
         // Update the total reaction wheels torque capacity for the vessel
         private void onVesselStandardModification(Vessel v)
         {
-            v.vesselModules.OfType<VesselModuleRotation>().First().updateWheelsTotalMaxTorque = true;
+            if (v.vesselModules.OfType<VesselModuleRotation>().Count() > 0)
+            {
+                v.vesselModules.OfType<VesselModuleRotation>().First().updateWheelsTotalMaxTorque = true;
+            }
         }
 
         // Detect active vessel change when switching vessel in the physics bubble
         private void onVesselChange(Vessel v)
         {
-            v.vesselModules.OfType<VesselModuleRotation>().First().vesselSASHasChanged = true;
+            if (v.vesselModules.OfType<VesselModuleRotation>().Count() > 0)
+            {
+                v.vesselModules.OfType<VesselModuleRotation>().First().vesselSASHasChanged = true;
+            }
         }
 
         // Detect navball context (orbit/surface/target) changes
         private void onSetSpeedMode(FlightGlobals.SpeedDisplayModes mode)
         {
-            FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleRotation>().First().autopilotContextCurrent = (int)mode;
+            if (FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleRotation>().Count() > 0)
+            {
+                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleRotation>().First().autopilotContextCurrent = (int)mode;
+            }
         }
 
         private void OnDestroy()
@@ -68,16 +77,21 @@ namespace MandatoryRCS
         {
             if (data.host.loaded)
             {
-                if (data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotTargetHold 
-                    && data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotMode >= 1 
-                    && data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotMode <= 6)
+                if (data.host.vesselModules != null && data.host.vesselModules.OfType<VesselModuleRotation>().Count() > 0)
                 {
-                    data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotTargetHold = false;
-                    data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotMode = 0;
+                    if (data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotTargetHold
+                        && data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotMode >= 1
+                        && data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotMode <= 6)
+                    {
+                      data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotTargetHold = false;
+                      data.host.vesselModules.OfType<VesselModuleRotation>().First().autopilotMode = 0;
+                    }
                 }
             }
             else
             {
+                if (data.host.protoVessel.vesselModules == null || !data.host.protoVessel.vesselModules.HasNode("VesselModuleRotation"))
+                { return; }
                 bool autopilotTargetHoldCurrent = false;
                 int autopilotModeCurrent = 0;
                 if (!data.host.protoVessel.vesselModules.GetNode("VesselModuleRotation").TryGetValue("autopilotTargetHold", ref autopilotTargetHoldCurrent))

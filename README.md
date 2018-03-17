@@ -70,6 +70,11 @@ So public domain, feel free to do anything, especially updating this plugin if I
 - Getting out of timewarps with the SAS direction hold activated input a large roll "kick", most visible at high timewarp levels. I tried a lot of things to find out why this happen or fix it, and failed.
 - When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require large modifications.
 
+#### v1.5 for KSP 1.4.1
+- Recompiled for KSP 1.4.1
+- (bugfix) Fixed NRE on asteroids changing SOI
+- (bugfix) Fixed NRE on planting flags
+
 #### v1.4 for KSP 1.3.1
 - Recompiled for KSP 1.3.1
 - Tweaks to the settings menu
