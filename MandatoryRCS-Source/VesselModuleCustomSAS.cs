@@ -1,6 +1,7 @@
 ﻿using MandatoryRCS.MechJeb;
 using MandatoryRCS.MechJebLib;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -66,20 +67,6 @@ TARGET
 
 namespace MandatoryRCS
 {
-    public enum AttitudeReference
-    {
-        INERTIAL,          //world coordinate system.
-        ORBIT,             //forward = prograde, left = normal plus, up = radial plus
-        ORBIT_HORIZONTAL,  //forward = surface projection of orbit velocity, up = surface normal
-        SURFACE_NORTH,     //forward = north, left = west, up = surface normal
-        SURFACE_VELOCITY,  //forward = surface frame vessel velocity, up = perpendicular component of surface normal
-        TARGET,            //forward = toward target, up = perpendicular component of vessel heading
-        RELATIVE_VELOCITY, //forward = toward relative velocity direction, up = tbd
-        TARGET_ORIENTATION,//forward = direction target is facing, up = target up
-        MANEUVER_NODE,     //forward = next maneuver node direction, up = tbd
-        SUN,               //forward = orbit velocity of the parent body orbiting the sun, up = radial plus of that orbit
-        SURFACE_HORIZONTAL,//forward = surface velocity horizontal component, up = surface normal
-    }
 
     public class VesselModuleCustomSAS : VesselModule
     {
@@ -96,11 +83,8 @@ namespace MandatoryRCS
         public bool RCS_auto = false;
         public bool attitudeRCScontrol = true;
 
-        //[Persistent(pass = (int)Pass.Global)]
         public bool Tf_autoTune = true;
 
-        //[Persistent(pass = (int)Pass.Global)]
-        //public double Tf = 0; // not used any more but kept so it loads from old configs
         public Vector3d TfV = new Vector3d(0.3, 0.3, 0.3);
         private Vector3 TfVec = new Vector3(0.3f, 0.3f, 0.3f);  // use the serialize since Vector3d does not
         public double TfMin = 0.1;
@@ -121,25 +105,10 @@ namespace MandatoryRCS
 
         protected bool attitudeChanged = false;
 
-        protected AttitudeReference _attitudeReference = AttitudeReference.INERTIAL;
+
 
         protected Vector3d _axisControl = Vector3d.one;
 
-        public AttitudeReference attitudeReference
-        {
-            get
-            {
-                return _attitudeReference;
-            }
-            set
-            {
-                if (_attitudeReference != value)
-                {
-                    _attitudeReference = value;
-                    attitudeChanged = true;
-                }
-            }
-        }
 
         protected Quaternion _oldAttitudeTarget = Quaternion.identity;
         protected Quaternion _lastAttitudeTarget = Quaternion.identity;
@@ -230,7 +199,7 @@ namespace MandatoryRCS
 
             steeringError.value = attitudeError = attitudeAngleFromTarget();
 
-
+            //Dictionary<ModuleEngines, ModuleGimbal> engines = new Dictionary<ModuleEngines, ModuleGimbal>();
 
             Vector6 torqueReactionWheel = new Vector6();
             Vector6 rcsTorqueAvailable = new Vector6();
@@ -260,6 +229,13 @@ namespace MandatoryRCS
                         torqueReactionWheel.Add(pos);
                         torqueReactionWheel.Add(-neg);
                     }
+                    //else if (pm is ModuleEngines)
+                    //{
+                    //    var moduleEngines = pm as ModuleEngines;
+
+                    //    if (!engines.ContainsKey(moduleEngines))
+                    //        engines.Add(moduleEngines, null);
+                    //}
                     else if (pm is ModuleControlSurface) // also does ModuleAeroSurface
                     {
                         ModuleControlSurface cs = (pm as ModuleControlSurface);
@@ -274,18 +250,35 @@ namespace MandatoryRCS
                     }
                     else if (pm is ModuleGimbal)
                     {
-                        //ModuleGimbal g = (pm as ModuleGimbal);
-                        //Vector3 pos;
-                        //Vector3 neg;
-                        //g.GetPotentialTorque(out pos, out neg); // GetPotentialTorque reports the same value for pos & neg on ModuleGimbal
-                        //torqueGimbal.Add(pos);
-                        //torqueGimbal.Add(-neg);
+                        ModuleGimbal g = (pm as ModuleGimbal);
 
-                        //if (g.useGimbalResponseSpeed)
+                        if (g.engineMultsList == null)
+                            g.CreateEngineList();
+
+                        //for (int j = 0; j < g.engineMultsList.Count; j++)
                         //{
-                        //    torqueReactionSpeed6.Add((Mathf.Abs(g.gimbalRange) / g.gimbalResponseSpeed) * Vector3d.Max(pos.Abs(), neg.Abs()));
+                        //    var engs = g.engineMultsList[j];
+                        //    for (int k = 0; k < engs.Count; k++)
+                        //    {
+                        //        engines[engs[k].Key] = g;
+                        //    }
                         //}
-                            
+
+                        try
+                        {
+                            Vector3 pos;
+                            Vector3 neg;
+                            g.GetPotentialTorque(out pos, out neg);
+                            // GetPotentialTorque reports the same value for pos & neg on ModuleGimbal
+                            torqueGimbal.Add(pos);
+                            torqueGimbal.Add(-neg);
+                            if (g.useGimbalResponseSpeed)
+                                torqueReactionSpeed6.Add((Mathf.Abs(g.gimbalRange) / g.gimbalResponseSpeed) * Vector3d.Max(pos.Abs(), neg.Abs()));
+                        }
+                        catch (Exception)
+                        {
+                            Debug.Log("Error : can't get potential torque from engine gimbal in " + p.partInfo.title);
+                        }
                     }
                     else if (pm is ModuleRCS)
                     {
@@ -376,10 +369,6 @@ namespace MandatoryRCS
         {
             if (attitudeChanged)
             {
-                if (attitudeReference != AttitudeReference.INERTIAL)
-                {
-                    attitudeKILLROT = false;
-                }
                 pid.Reset();
                 lastAct = Vector3d.zero;
 
@@ -407,10 +396,11 @@ namespace MandatoryRCS
         // Calculate requested attitude
         private Quaternion GetRequestedAttitude()
         {
-            Vector3 direction = Vector3d.zero;
+            Vector3 direction = Vessel.GetTransform().up;
             Vector3 rollDirection = -Vessel.GetTransform().forward;
-            Quaternion attitude = Quaternion.identity;
+            Quaternion attitudeRequested = Quaternion.identity;
 
+            // Get direction vector
             switch (SASMode)
             {
                 case SASHandler.SASFunction.Prograde:
@@ -423,10 +413,7 @@ namespace MandatoryRCS
                     {
                         if (Vessel.targetObject != null)
                         { direction = -(Vessel.targetObject.GetObtVelocity() - Vessel.obt_velocity); }
-                        else
-                        { direction =  Vessel.GetTransform().up; }
                     }
-
                     if (SASMode == SASHandler.SASFunction.Retrograde) // Invert vector for retrograde
                     {
                         direction = -direction;
@@ -461,89 +448,115 @@ namespace MandatoryRCS
 
                         // Return radial vector
                         if (SASMode == SASHandler.SASFunction.RadialIn) // Radial In
-                        { direction = -radial; }
-                        else if (SASMode == SASHandler.SASFunction.RadialOut) // Radial Out
                         { direction = radial; }
-                    }
-                    break;
-                case SASHandler.SASFunction.Target:
-                case SASHandler.SASFunction.AntiTarget:
-                    if (Vessel.targetObject != null)
-                    {
-                        if (SASMode == SASHandler.SASFunction.Target) // Target
-                        { direction = Vessel.targetObject.GetTransform().position - Vessel.transform.position; }
-
-                        if (SASMode == SASHandler.SASFunction.AntiTarget) // AntiTarget
-                        { direction = -(Vessel.targetObject.GetTransform().position - Vessel.transform.position); }
-                    }
-                    else
-                    {
-                        // No orientation keeping if target is null
-                        direction = Vessel.GetTransform().up;
+                        else if (SASMode == SASHandler.SASFunction.RadialOut) // Radial Out
+                        { direction = -radial; }
                     }
                     break;
                 case SASHandler.SASFunction.Maneuver:
-                    if (Vessel.patchedConicSolver.maneuverNodes.Count > 0)
-                    {
-                        direction = Vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(Vessel.orbit);
-                    }
-                    else
-                    {
-                        // No orientation keeping if there is no more maneuver node
-                        direction = Vessel.GetTransform().up;
-                    }
+                    if (Vessel.patchedConicSolver.maneuverNodes.Count < 1) { break; }
+                    direction = Vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(Vessel.orbit);
+                    break;
+                case SASHandler.SASFunction.Target:
+                    if (Vessel.targetObject == null) { break; }
+                    direction = Vessel.targetObject.GetTransform().position - Vessel.transform.position;
+                    break;
+                case SASHandler.SASFunction.AntiTarget:
+                    if (Vessel.targetObject == null) { break; }
+                    direction = -(Vessel.targetObject.GetTransform().position - Vessel.transform.position);
                     break;
                 case SASHandler.SASFunction.Parallel:
-                    direction = Vector3d.forward;
+                    if (Vessel.targetObject == null) { break; }
+                    direction = Vessel.targetObject.GetTransform().up;
                     break;
                 case SASHandler.SASFunction.AntiParallel:
-                    direction = Vector3d.back;
+                    if (Vessel.targetObject == null) { break; }
+                    direction = -(Vessel.targetObject.GetTransform().up);
                     break;
+                case SASHandler.SASFunction.ProgradeCorrected:
+                case SASHandler.SASFunction.RetrogradeCorrected:
+                    if (Vessel.targetObject == null) { break; }
+                    Vector3 targetDirInv = Vessel.transform.position - Vessel.targetObject.GetTransform().position;
+                    Vector3 targetRelVel = Vessel.GetObtVelocity() - Vessel.targetObject.GetObtVelocity();
+
+                    Vector3 correction = Vector3.ProjectOnPlane(-targetRelVel,targetDirInv);
+
+                    // Avoid chasing the target when relative velocity is very low
+                    if (correction.magnitude < 0.05)
+                    {
+                        direction = -targetDirInv;
+                        break;
+                    }
+                    // approch target direction
+                    else
+                    {
+                        correction = correction * ((targetDirInv.magnitude / correction.magnitude) * Math.Max(correction.magnitude / targetDirInv.magnitude, 1.0f)) ;
+                    }
+
+                    direction = correction - targetDirInv;
+
+                    if (SASMode == SASHandler.SASFunction.RetrogradeCorrected)
+                    {
+                        direction = -direction;
+                    }
+                    break;
+
+                    //Vector3 projection = targetPos.normalized + Vector3.ProjectOnPlane(targetvel, targetPos);
+                    //float projectionMagn = projection.magnitude;
+                    //projection = projectionMagn > 1.0f ? projection / projectionMagn * 1.0f : projection;
+                    //direction = vessel.ReferenceTransform.InverseTransformDirection(projection.normalized);
+
             }
 
+            // Get orientation
             switch (SASMode)
             {
                 case SASHandler.SASFunction.Hold:
-                    //SetSMARTASSMode(MechJebModuleSmartASS.Target.KILLROT, FlightGlobals.speedDisplayMode);
+                    attitudeRequested = Quaternion.LookRotation(Vessel.GetTransform().up, -Vessel.GetTransform().forward);
                     break;
                 case SASHandler.SASFunction.HoldSmooth:
-                    //SetSMARTASSMode(MechJebModuleSmartASS.Target.KILLROT, FlightGlobals.speedDisplayMode);
+                    attitudeRequested = Quaternion.LookRotation(Vessel.GetTransform().up, -Vessel.GetTransform().forward);
                     break;
                 case SASHandler.SASFunction.KillRot:
-                    attitude = Quaternion.LookRotation(Vessel.GetTransform().up, -Vessel.GetTransform().forward);
+                    attitudeRequested = Quaternion.LookRotation(Vessel.GetTransform().up, -Vessel.GetTransform().forward);
                     break;
                 default:
-                    Vector3 up = -Vessel.GetTransform().forward;
-                    Vector3 dir = direction;
-                    Quaternion rotref = Quaternion.LookRotation(Vessel.obt_velocity.normalized, (vessel.CoMD - vessel.mainBody.position).normalized);
-                    up = attitudeWorldToReference(attitudeReferenceToWorld(rotref * Vector3.up));
-                    Vector3.OrthoNormalize(ref dir, ref up);
-                    attitude = Quaternion.LookRotation(dir, up);
+                    // Define the roll reference
+                    Vector3 rollRef = Vector3.zero;
+                    switch (FlightGlobals.speedDisplayMode)
+                    {
+                        case FlightGlobals.SpeedDisplayModes.Orbit:
+                            rollRef = (Vessel.rootPart.transform.position - Vessel.mainBody.position).normalized;
+                            break;
+                        case FlightGlobals.SpeedDisplayModes.Surface:
+                            rollRef = (Vessel.rootPart.transform.position - Vessel.mainBody.position).normalized;
+                            break;
+                        case FlightGlobals.SpeedDisplayModes.Target:
+                            rollRef = -Vessel.targetObject.GetTransform().forward; // TODO : CHECK THIS
+                            break;
+                    }
+                    attitudeRequested = Quaternion.LookRotation(direction, rollRef);
+                    
+
+                    if (lockedRollMode)
+                    {
+                        attitudeRequested *= Quaternion.Euler(0, 0, -currentRoll);
+                        _axisControl.y = 1;
+                    }
+                    else
+                    {
+                        _axisControl.y = 0;
+                    }
+
+
                     break;
             }
 
-            //attitude = Quaternion.LookRotation(Vessel.obt_velocity, -Vessel.GetTransform().forward);
-
-            return attitude;
-        }
-
-        public Vector3d attitudeWorldToReference(Vector3d vector)
-        {
-            Quaternion rotref = Quaternion.LookRotation(Vessel.obt_velocity.normalized, (vessel.CoMD - vessel.mainBody.position).normalized);
-            return Quaternion.Inverse(rotref) * vector;
-        }
-
-        public Vector3d attitudeReferenceToWorld(Vector3d vector)
-        {
-            Quaternion rotref = Quaternion.LookRotation(Vessel.obt_velocity.normalized, (vessel.CoMD - vessel.mainBody.position).normalized);
-            return rotref * vector;
+            return attitudeRequested;
         }
 
         public void UpdateFlightInput(FlightCtrlState s)
         {
-            // Direction we want to be facing
-            //_requestedAttitude = attitudeGetReferenceRotation(attitudeReference) * attitudeTarget;
-            // REFACTOR : requestedAttitudeVector
             Transform vesselTransform = vessel.ReferenceTransform;
             //Quaternion delta = Quaternion.Inverse(Quaternion.Euler(90, 0, 0) * Quaternion.Inverse(vesselTransform.rotation) * _requestedAttitude);
 
@@ -563,7 +576,6 @@ namespace MandatoryRCS
             float rollError = Vector3.Angle(vesselTransform.right, targetDeRotated * Vector3.right) * Math.Sign(Vector3.Dot(targetDeRotated * Vector3.right, vesselTransform.forward));
 
             // From here everything should use MOI order for Vectors (pitch, roll, yaw)
-
             error = new Vector3d(
                 -rotDirection.y * Math.PI,
                 rollError * Mathf.Deg2Rad,
@@ -711,29 +723,13 @@ namespace MandatoryRCS
 
             TfV = 0.05 * ratio;
 
-            //print("TfV O " + MuUtils.PrettyPrint(TfV));
-
-
-
-
-
-
-
-
             Vector3d delayFactor = Vector3d.one + 2 * torqueReactionSpeed;
-
-            //print("del F " + MuUtils.PrettyPrint(delayFactor));
 
             TfV.Scale(delayFactor);
 
 
             TfV = TfV.Clamp(2.0 * TimeWarp.fixedDeltaTime, TfMax);
             TfV = TfV.Clamp(TfMin, TfMax);
-
-            //print("TfV F " + MuUtils.PrettyPrint(TfV));
-
-            //Tf = Mathf.Clamp((float)ratio.magnitude / 20f, 2 * TimeWarp.fixedDeltaTime, 1f);
-            //Tf = Mathf.Clamp((float)Tf, (float)TfMin, (float)TfMax);
         }
 
         public void setPIDParameters()
@@ -765,125 +761,7 @@ namespace MandatoryRCS
             _axisControl.y = roll ? 1 : 0;
             _axisControl.z = yaw ? 1 : 0;
         }
-        /*
-        public Quaternion attitudeGetReferenceRotation(AttitudeReference reference)
-        {
-            Vector3 fwd, up;
-            Quaternion rotRef = Quaternion.identity;
-
-            if (core.target.Target == null && (reference == AttitudeReference.TARGET || reference == AttitudeReference.TARGET_ORIENTATION || reference == AttitudeReference.RELATIVE_VELOCITY))
-            {
-                attitudeDeactivate();
-                return rotRef;
-            }
-
-            if ((reference == AttitudeReference.MANEUVER_NODE) && (vessel.patchedConicSolver.maneuverNodes.Count == 0))
-            {
-                attitudeDeactivate();
-                return rotRef;
-            }
-
-            switch (reference)
-            {
-                case AttitudeReference.ORBIT:
-                    rotRef = Quaternion.LookRotation(vesselState.orbitalVelocity.normalized, vesselState.up);
-                    break;
-                case AttitudeReference.ORBIT_HORIZONTAL:
-                    rotRef = Quaternion.LookRotation(Vector3d.Exclude(vesselState.up, vesselState.orbitalVelocity.normalized), vesselState.up);
-                    break;
-                case AttitudeReference.SURFACE_NORTH:
-                    rotRef = vesselState.rotationSurface;
-                    break;
-                case AttitudeReference.SURFACE_VELOCITY:
-                    rotRef = Quaternion.LookRotation(vesselState.surfaceVelocity.normalized, vesselState.up);
-                    break;
-                case AttitudeReference.TARGET:
-                    fwd = (core.target.Position - vessel.GetTransform().position).normalized;
-                    up = Vector3d.Cross(fwd, vesselState.normalPlus);
-                    Vector3.OrthoNormalize(ref fwd, ref up);
-                    rotRef = Quaternion.LookRotation(fwd, up);
-                    break;
-                case AttitudeReference.RELATIVE_VELOCITY:
-                    fwd = core.target.RelativeVelocity.normalized;
-                    up = Vector3d.Cross(fwd, vesselState.normalPlus);
-                    Vector3.OrthoNormalize(ref fwd, ref up);
-                    rotRef = Quaternion.LookRotation(fwd, up);
-                    break;
-                case AttitudeReference.TARGET_ORIENTATION:
-                    Transform targetTransform = core.target.Transform;
-                    if (core.target.CanAlign)
-                    {
-                        rotRef = Quaternion.LookRotation(targetTransform.forward, targetTransform.up);
-                    }
-                    else
-                    {
-                        rotRef = Quaternion.LookRotation(targetTransform.up, targetTransform.right);
-                    }
-                    break;
-                case AttitudeReference.MANEUVER_NODE:
-                    fwd = vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(orbit);
-                    up = Vector3d.Cross(fwd, vesselState.normalPlus);
-                    Vector3.OrthoNormalize(ref fwd, ref up);
-                    rotRef = Quaternion.LookRotation(fwd, up);
-                    break;
-                case AttitudeReference.SUN:
-                    Orbit baseOrbit = vessel.mainBody == Planetarium.fetch.Sun ? vessel.orbit : orbit.TopParentOrbit();
-                    up = vesselState.CoM - Planetarium.fetch.Sun.transform.position;
-                    fwd = Vector3d.Cross(-baseOrbit.GetOrbitNormal().xzy.normalized, up);
-                    rotRef = Quaternion.LookRotation(fwd, up);
-                    break;
-                case AttitudeReference.SURFACE_HORIZONTAL:
-                    rotRef = Quaternion.LookRotation(Vector3d.Exclude(vesselState.up, vesselState.surfaceVelocity.normalized), vesselState.up);
-                    break;
-            }
-            return rotRef;
-        }
-
-        public Vector3d attitudeWorldToReference(Vector3d vector, AttitudeReference reference)
-        {
-            return Quaternion.Inverse(attitudeGetReferenceRotation(reference)) * vector;
-        }
-
-        public Vector3d attitudeReferenceToWorld(Vector3d vector, AttitudeReference reference)
-        {
-            return attitudeGetReferenceRotation(reference) * vector;
-        }
-                
-        public bool attitudeTo(Quaternion attitude, AttitudeReference reference, object controller)
-        {
-            users.Add(controller);
-            attitudeReference = reference;
-            attitudeTarget = attitude;
-            AxisControl(true, true, true);
-            return true;
-        }
-
-        public bool attitudeTo(Vector3d direction, AttitudeReference reference, object controller)
-        {
-            //double ang_diff = Math.Abs(Vector3d.Angle(attitudeGetReferenceRotation(attitudeReference) * attitudeTarget * Vector3d.forward, attitudeGetReferenceRotation(reference) * direction));
-
-            Vector3 up, dir = direction;
-
-            if (!enabled)
-            {
-                up = attitudeWorldToReference(-vessel.GetTransform().forward, reference);
-            }
-            else
-            {
-                up = attitudeWorldToReference(attitudeReferenceToWorld(attitudeTarget * Vector3d.up, attitudeReference), reference);
-            }
-            Vector3.OrthoNormalize(ref dir, ref up);
-            attitudeTo(Quaternion.LookRotation(dir, up), reference, controller);
-            AxisControl(true, true, false);
-            return true;
-        }
-
-        public bool attitudeTo(double heading, double pitch, double roll, object controller)
-        {
-            Quaternion attitude = Quaternion.AngleAxis((float)heading, Vector3.up) * Quaternion.AngleAxis(-(float)pitch, Vector3.right) * Quaternion.AngleAxis(-(float)roll, Vector3.forward);
-            return attitudeTo(attitude, AttitudeReference.SURFACE_NORTH, controller);
-        }
-        */
+     
         public bool attitudeDeactivate()
         {
             //users.Clear();
@@ -901,8 +779,6 @@ namespace MandatoryRCS
             return enabled ? Math.Abs(Vector3d.Angle(requestedDirection, vessel.GetTransform().up)) : 0;
             //return enabled ? Math.Abs(Vector3d.Angle(attitudeGetReferenceRotation(attitudeReference) * attitudeTarget * Vector3d.forward, vesselState.forward)) : 0;
         }
-
-
     }
 
     public class PIDControllerV3 : IConfigNode

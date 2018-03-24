@@ -24,7 +24,8 @@ namespace MandatoryRCS
         {
             Debug.Log("loading : " + "MandatoryRCS/Resources/" + textureName);
             Texture2D texture = GameDatabase.Instance.GetTexture("MandatoryRCS/Resources/" + textureName, false);
-            texture.filterMode = FilterMode.Trilinear;
+
+            texture.filterMode = FilterMode.Bilinear; // FilterMode.Trilinear is too blurry
             return texture;
         }
 
@@ -105,12 +106,6 @@ namespace MandatoryRCS
             PitchDown
         }
 
-        public enum SASContext
-        {
-            Surface,
-            Orbit,
-            Target
-        }
 
         // SPRITES
         // Overlays
@@ -451,12 +446,14 @@ namespace MandatoryRCS
                 {
                     currentRoll += 45;
                     if (currentRoll > 315) currentRoll = 0;
+                    FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().currentRoll = currentRoll;
                     UpdateRollSymbol();
                 }
                 if (function == SASFunction.RollLeft)
                 {
                     currentRoll -= 45;
                     if (currentRoll < 0) currentRoll = 315;
+                    FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().currentRoll = currentRoll;
                     UpdateRollSymbol();
                 }
             }
@@ -467,12 +464,14 @@ namespace MandatoryRCS
                 {
                     pitchOffset += 5;
                     if (pitchOffset > 15) pitchOffset = 15;
+                    FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().pitchOffset = pitchOffset;
                     UpdatePitchSymbol();
                 }
                 if (function == SASFunction.PitchDown)
                 {
                     pitchOffset -= 5;
                     if (pitchOffset < -15) pitchOffset = -15;
+                    FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().pitchOffset = pitchOffset;
                     UpdatePitchSymbol();
                 }
             }
@@ -708,10 +707,7 @@ namespace MandatoryRCS
 
         private SASHandler handler;
 
-        private bool stockSASEnabled;
-        private bool customSASEnabled;
-        private bool customSASVisible;
-        private FlightGlobals.SpeedDisplayModes speedMode;
+        private bool customSASVisible = true;
 
 
         void LateUpdate()
@@ -781,7 +777,7 @@ namespace MandatoryRCS
 
             handler.ManeuverActive(FlightGlobals.ActiveVessel.patchedConicSolver.maneuverNodes.Count != 0);
             handler.TargetActive(FlightGlobals.ActiveVessel.targetObject != null);
-            handler.VelocityActive(FlightGlobals.GetDisplaySpeed() > 1.0);
+            handler.VelocityActive(FlightGlobals.GetDisplaySpeed() > 0.1);
 
         }
 

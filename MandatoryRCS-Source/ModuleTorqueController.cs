@@ -99,7 +99,7 @@ namespace MandatoryRCS
         // Apply torque in OnFlyByWire because the module FixedUpdate() is called too late, resulting in a 1 frame lag in torque updates, leading to having torque when you shouldn't.
         private void UpdateTorque(FlightCtrlState st)
         {
-            if (FlightGlobals.ready && vessel.loaded && !vessel.packed)
+            if (FlightGlobals.ready && vessel.loaded && !vessel.packed && vessel.Autopilot != null)
             {
                 // Get the saturation factor calculated from the vessel rotation
                 saturationFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().velSaturationTorqueFactor;
