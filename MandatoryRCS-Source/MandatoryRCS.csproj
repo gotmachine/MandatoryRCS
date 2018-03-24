@@ -30,26 +30,25 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="VesselModuleCustomSAS.cs" />
     <Compile Include="DebugInfo.cs" />
     <Compile Include="MandatoryRCSNavBall.cs" />
     <Compile Include="MandatoryRCSSettings.cs" />
-    <Compile Include="ModuleMechJebMRCS.cs" />
+    <Compile Include="MechJebLib\CelestialBodyExtensions.cs" />
+    <Compile Include="MechJebLib\MathExtensions.cs" />
+    <Compile Include="MechJebLib\MuUtils.cs" />
+    <Compile Include="MechJebLib\Vector6.cs" />
     <Compile Include="ModuleTorqueController.cs" />
-    <Compile Include="MRCSSAS\VesselWrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MandatoryRCSEvents.cs" />
     <Compile Include="VesselModuleRotation.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="000_AT_Utils">
-      <HintPath>..\..\..\..\..\..\..\Source\Repos\ThrottleControlledAvionics\GameData\ThrottleControlledAvionics\Plugins\000_AT_Utils.dll</HintPath>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.4.1 DEV\KSP_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="MechJeb2">
-      <HintPath>..\..\..\..\..\Plugins projects\Sources\MechJeb2\MechJeb2\bin\Debug\MechJeb2.dll</HintPath>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.4.1 DEV\KSP_x64_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="System">
       <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\System.dll</HintPath>
@@ -57,20 +56,18 @@
     <Reference Include="System.Xml">
       <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\System.Xml.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.4.1 DEV\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\UnityEngine.UI.dll</HintPath>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.4.1 DEV\KSP_x64_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\Kerbal Space Program 1.3.1 DEV\GameData\ZZZ_MandatoryRCS\"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal Space Program 1.3.1 DEV\GameData\ZZZ_MandatoryRCS\"</PostBuildEvent>
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\Kerbal Space Program 1.4.1 DEV\GameData\MandatoryRCS\"
+xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal Space Program 1.4.1 DEV\GameData\MandatoryRCS\"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

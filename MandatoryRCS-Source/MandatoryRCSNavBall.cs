@@ -22,7 +22,8 @@ namespace MandatoryRCS
 
         public static Texture2D GetTexture(string textureName)
         {
-            Texture2D texture = GameDatabase.Instance.GetTexture("ZZZ_MandatoryRCS/Resources/" + textureName, false);
+            Debug.Log("loading : " + "MandatoryRCS/Resources/" + textureName);
+            Texture2D texture = GameDatabase.Instance.GetTexture("MandatoryRCS/Resources/" + textureName, false);
             texture.filterMode = FilterMode.Trilinear;
             return texture;
         }
@@ -198,7 +199,6 @@ namespace MandatoryRCS
             mainPanel.layer = LayerMask.NameToLayer("UI");
             mainPanel.transform.localPosition = new Vector3(-190, 78);
 
-
             int xoffset = 0; 
             int yoffset = 5;  
 
@@ -332,7 +332,7 @@ namespace MandatoryRCS
 
             if (FlightGlobals.ActiveVessel != null)
             {
-                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleRotation>().First().customSASMode = function;
+                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().SASMode = function;
             }
         }
 
@@ -344,6 +344,13 @@ namespace MandatoryRCS
             rollLeft.SetActive(enabled);
             freeRoll.SetToggleState(enabled, false);
             UpdateRollSymbol();
+
+            if (FlightGlobals.ActiveVessel != null)
+            {
+                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().lockedRollMode = lockedRollMode;
+                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().currentRoll = currentRoll;
+            }
+
         }
 
         public void UpdateRollSymbol()
@@ -388,6 +395,13 @@ namespace MandatoryRCS
             pitchUp.SetActive(enabled);
             pitchReset.SetToggleState(enabled, false);
             UpdatePitchSymbol();
+
+            if (FlightGlobals.ActiveVessel != null)
+            {
+                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().pitchOffsetMode = pitchOffsetMode;
+                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().pitchOffset = pitchOffset;
+            }
+
         }
 
         public void UpdatePitchSymbol()
@@ -542,7 +556,7 @@ namespace MandatoryRCS
 
     }
 
-        public class SASToggle
+    public class SASToggle
     {
         //public Sprite spriteOn;
         //public Sprite spriteOff;
@@ -733,28 +747,26 @@ namespace MandatoryRCS
             }
         }
 
-        public void EnableCustomSASUI(bool enable)
-        {
-            if (enable != customSASEnabled)
-            {
-                handler.EnableSASPanel(enable);
-                customSASEnabled = enable;
-            }
+        //public void EnableCustomSASUI(bool enable)
+        //{
+        //    if (enable != customSASEnabled)
+        //    {
+        //        handler.EnableSASPanel(enable);
+        //        customSASEnabled = enable;
+        //    }
 
-            if (enable == stockSASEnabled)
-            {
-                autoPilotModes.SetActive(!enable);
-                stockSASEnabled = !enable;
-            }
-        }
+        //    if (enable == stockSASEnabled)
+        //    {
+        //        autoPilotModes.SetActive(!enable);
+        //        stockSASEnabled = !enable;
+        //    }
+        //}
 
-        public
-
-        void FixedUpdate()
+        public void FixedUpdate()
         {
             if (handler == null) return;
 
-            if (!customSASEnabled) return;
+            //if (!customSASEnabled) return;
 
             if (FlightGlobals.ActiveVessel.Autopilot.Enabled != customSASVisible)
             {

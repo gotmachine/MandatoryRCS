@@ -1,11 +1,8 @@
-﻿using MuMech;
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace MandatoryRCS
 {
-
-
     public class VesselModuleRotation : VesselModule
     {
         [KSPField(isPersistant = true)]
@@ -52,128 +49,96 @@ namespace MandatoryRCS
         // SAS target direction is made available for the ModuleTorqueController
         public Vector3 targetDirection;
 
-        public MRCSMechJebCore mechjeb;
-        public MechJebModuleSmartASS SmartASS;
+        //public MRCSMechJebCore mechjeb;
+        //public MechJebModuleSmartASS SmartASS;
 
         public SASHandler.SASFunction customSASMode;
 
+        //protected override void OnStart()
+        //{
+        //    base.OnStart();
+        //    Vessel.OnPreAutopilotUpdate += new FlightInputCallback(DisableStockSAS);
+        //}
 
+        //private void DisableStockSAS(FlightCtrlState s)
+        //{
+        //    // Disable stock autopilot
+        //    Vessel.Autopilot.SAS.DisconnectFlyByWire();
 
-        protected override void OnStart()
-        {
-            base.OnStart();
-            Vessel.OnPreAutopilotUpdate += new FlightInputCallback(DisableStockSAS);
-        }
+        //    switch (customSASMode)
+        //    {
+        //        case SASHandler.SASFunction.Hold:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.KILLROT, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.HoldSmooth:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.KILLROT, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.KillRot:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.KILLROT, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.Prograde:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.PROGRADE, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.Retrograde:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.RETROGRADE, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.Normal:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.NORMAL_PLUS, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.AntiNormal:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.NORMAL_MINUS, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.RadialOut:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.RADIAL_PLUS, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.RadialIn:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.RADIAL_MINUS, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.Target:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.TARGET_PLUS, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.AntiTarget:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.TARGET_MINUS, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.Maneuver:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.NODE, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.Parallel:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target.PARALLEL_PLUS, FlightGlobals.speedDisplayMode);
+        //            break;
+        //        case SASHandler.SASFunction.AntiParallel:
+        //            //SetSMARTASSMode(MechJebModuleSmartASS.Target., FlightGlobals.speedDisplayMode);
+        //            break;
+        //        default:
+        //            break;
+        //    }
+        //}
 
-        private void DisableStockSAS(FlightCtrlState s)
-        {
-            // Get the mechjeb module
-            if (mechjeb == null)
-            {
-                mechjeb = Vessel.GetMRCSMasterMechJeb();
-                if (mechjeb != null)
-                {
-                    // cast the attitude instance to our customized child class that handle stock SAS re-enabling
-                    mechjeb.attitude = (MRCSAttitudeController)mechjeb.attitude;
+        //private void SetSMARTASSMode(MechJebModuleSmartASS.Target target, FlightGlobals.SpeedDisplayModes mode)
+        //{
+        //    switch (mode)
+        //    {
+        //        case FlightGlobals.SpeedDisplayModes.Orbit:
+        //            SetSMARTASSMode(target, MechJebModuleSmartASS.Mode.ORBITAL);
+        //            break;
+        //        case FlightGlobals.SpeedDisplayModes.Surface:
+        //            SetSMARTASSMode(target, MechJebModuleSmartASS.Mode.SURFACE);
+        //            break;
+        //        case FlightGlobals.SpeedDisplayModes.Target:
+        //            SetSMARTASSMode(target, MechJebModuleSmartASS.Mode.TARGET);
+        //            break;
+        //    }
+        //}
 
-                    // get references to useful modules
-                    SmartASS = mechjeb.GetComputerModule<MechJebModuleSmartASS>();
-                }
-            }
-
-            if (mechjeb == null || SmartASS == null) return;
-
-            if (!mechjeb.running) return;
-
-            // Disable stock autopilot
-            Vessel.Autopilot.SAS.DisconnectFlyByWire();
-
-            // Disable smartASS if stock SAS is disabled
-            if (!Vessel.Autopilot.Enabled)
-            {
-                if (SmartASS.target != MechJebModuleSmartASS.Target.OFF)
-                {
-                    SmartASS.target = MechJebModuleSmartASS.Target.OFF;
-                    SmartASS.Engage();
-                }
-                return;
-            }
-
-            //
-            switch (customSASMode)
-            {
-                case SASHandler.SASFunction.Hold:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.KILLROT, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.HoldSmooth:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.KILLROT, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.KillRot:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.KILLROT, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.Prograde:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.PROGRADE, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.Retrograde:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.RETROGRADE, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.Normal:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.NORMAL_PLUS, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.AntiNormal:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.NORMAL_MINUS, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.RadialOut:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.RADIAL_PLUS, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.RadialIn:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.RADIAL_MINUS, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.Target:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.TARGET_PLUS, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.AntiTarget:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.TARGET_MINUS, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.Maneuver:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.NODE, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.Parallel:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target.PARALLEL_PLUS, FlightGlobals.speedDisplayMode);
-                    break;
-                case SASHandler.SASFunction.AntiParallel:
-                    SetSMARTASSMode(MechJebModuleSmartASS.Target., FlightGlobals.speedDisplayMode);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        private void SetSMARTASSMode(MechJebModuleSmartASS.Target target, FlightGlobals.SpeedDisplayModes mode)
-        {
-            switch (mode)
-            {
-                case FlightGlobals.SpeedDisplayModes.Orbit:
-                    SetSMARTASSMode(target, MechJebModuleSmartASS.Mode.ORBITAL);
-                    break;
-                case FlightGlobals.SpeedDisplayModes.Surface:
-                    SetSMARTASSMode(target, MechJebModuleSmartASS.Mode.SURFACE);
-                    break;
-                case FlightGlobals.SpeedDisplayModes.Target:
-                    SetSMARTASSMode(target, MechJebModuleSmartASS.Mode.TARGET);
-                    break;
-            }
-        }
-
-        private void SetSMARTASSMode(MechJebModuleSmartASS.Target target, MechJebModuleSmartASS.Mode mode)
-        {
-            if (SmartASS.target != target)
-            {
-                SmartASS.mode = mode;
-                SmartASS.target = target;
-                SmartASS.Engage();
-            }
-        }
+        //private void SetSMARTASSMode(MechJebModuleSmartASS.Target target, MechJebModuleSmartASS.Mode mode)
+        //{
+        //    if (SmartASS.target != target)
+        //    {
+        //        SmartASS.mode = mode;
+        //        SmartASS.target = target;
+        //        SmartASS.Engage();
+        //    }
+        //}
 
         private void FixedUpdate()
         {
