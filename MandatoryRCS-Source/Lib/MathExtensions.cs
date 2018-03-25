@@ -1,7 +1,14 @@
-﻿using System;
+﻿
+/* LICENSE INFORMATION
+ * This file and all code it contains is licensed under the GNU General Public License v3.0
+ * It is derived from MechJeb2 Copyright (C) 2013 
+ * MechJeb2 can be found at https://github.com/MuMech/MechJeb2
+ */
+
+using System;
 using UnityEngine;
 
-namespace MandatoryRCS.MechJeb
+namespace MandatoryRCS.Lib
 {
     public static class MathExtensions
     {

@@ -78,7 +78,7 @@ namespace MandatoryRCS
         }
     }
 
-    public class SASHandler
+    public class SASUI
     {
         public enum SASFunction
         {
@@ -178,16 +178,19 @@ namespace MandatoryRCS
         private SASFunction currentMode;
         private FlightGlobals.SpeedDisplayModes currentContext;
         
-
         public bool lockedRollMode = false;
         public bool pitchOffsetMode = false;
         public int currentRoll = 0;
         public int pitchOffset = 0;
 
+        public bool vesselHasChanged = false;
+
+        public VesselModuleMandatoryRCS activeVM;
+
         private GameObject mainPanel;
 
 
-        public SASHandler(GameObject parentPanel)
+        public SASUI(GameObject parentPanel, VesselModuleMandatoryRCS activeVM)
         {
             mainPanel = new GameObject("MRCS_SAS");
             mainPanel.transform.SetParent(parentPanel.transform);
@@ -237,15 +240,22 @@ namespace MandatoryRCS
             toggles.Add(parallel);
             toggles.Add(antiParallel);
 
-            SetContext(FlightGlobals.SpeedDisplayModes.Surface);
-            SetRollMode(false);
-            SetPitchMode(false);
-            SetMode(SASFunction.HoldSmooth);
+            this.activeVM = activeVM;
+
+            UpdateUIState();
         }
 
         public void EnableSASPanel(bool enabled)
         {
             mainPanel.SetActive(enabled);
+        }
+
+        public void UpdateUIState()
+        {
+            SetContext(FlightGlobals.SpeedDisplayModes.Surface);
+            SetRollMode(activeVM.lockedRollMode, activeVM.currentRoll);
+            SetPitchMode(activeVM.pitchOffsetMode, activeVM.pitchOffset);
+            SetMode(activeVM.SASMode);
         }
 
         public FlightGlobals.SpeedDisplayModes GetContext() { return currentContext; }
@@ -327,7 +337,7 @@ namespace MandatoryRCS
 
             if (FlightGlobals.ActiveVessel != null)
             {
-                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().SASMode = function;
+                activeVM.SASMode = function;
             }
         }
 
@@ -342,8 +352,8 @@ namespace MandatoryRCS
 
             if (FlightGlobals.ActiveVessel != null)
             {
-                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().lockedRollMode = lockedRollMode;
-                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().currentRoll = currentRoll;
+                activeVM.lockedRollMode = lockedRollMode;
+                activeVM.currentRoll = currentRoll;
             }
 
         }
@@ -393,8 +403,8 @@ namespace MandatoryRCS
 
             if (FlightGlobals.ActiveVessel != null)
             {
-                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().pitchOffsetMode = pitchOffsetMode;
-                FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().pitchOffset = pitchOffset;
+                activeVM.pitchOffsetMode = pitchOffsetMode;
+                activeVM.pitchOffset = pitchOffset;
             }
 
         }
@@ -446,14 +456,14 @@ namespace MandatoryRCS
                 {
                     currentRoll += 45;
                     if (currentRoll > 315) currentRoll = 0;
-                    FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().currentRoll = currentRoll;
+                    activeVM.currentRoll = currentRoll;
                     UpdateRollSymbol();
                 }
                 if (function == SASFunction.RollLeft)
                 {
                     currentRoll -= 45;
                     if (currentRoll < 0) currentRoll = 315;
-                    FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().currentRoll = currentRoll;
+                    activeVM.currentRoll = currentRoll;
                     UpdateRollSymbol();
                 }
             }
@@ -464,14 +474,14 @@ namespace MandatoryRCS
                 {
                     pitchOffset += 5;
                     if (pitchOffset > 15) pitchOffset = 15;
-                    FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().pitchOffset = pitchOffset;
+                    activeVM.pitchOffset = pitchOffset;
                     UpdatePitchSymbol();
                 }
                 if (function == SASFunction.PitchDown)
                 {
                     pitchOffset -= 5;
                     if (pitchOffset < -15) pitchOffset = -15;
-                    FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleCustomSAS>().First().pitchOffset = pitchOffset;
+                    activeVM.pitchOffset = pitchOffset;
                     UpdatePitchSymbol();
                 }
             }
@@ -484,7 +494,7 @@ namespace MandatoryRCS
         //public Sprite spriteOff;
         //public Sprite spriteSymbol;
 
-        public SASHandler.SASFunction function; 
+        public SASUI.SASFunction function; 
 
         private GameObject buttonObject;
         private GameObject button;
@@ -494,9 +504,9 @@ namespace MandatoryRCS
         private Image symbolImage;
         private Image offImage;
 
-        private SASHandler handler;
+        private SASUI handler;
 
-        public SASButton(SASHandler handler, SASHandler.SASFunction function, Vector2 position, GameObject parent, Sprite spriteSymbol, Sprite spriteOff, Sprite spriteOn)
+        public SASButton(SASUI handler, SASUI.SASFunction function, Vector2 position, GameObject parent, Sprite spriteSymbol, Sprite spriteOff, Sprite spriteOn)
         {
             this.handler = handler;
             this.function = function;
@@ -573,11 +583,11 @@ namespace MandatoryRCS
         private KSP.UI.TooltipTypes.TooltipController_Text tooltip;
         private Image symbolImage;
 
-        private SASHandler handler;
-        private SASHandler.SASFunction function;
-        public SASHandler.SASFunction GetFunction() { return function; }
+        private SASUI handler;
+        private SASUI.SASFunction function;
+        public SASUI.SASFunction GetFunction() { return function; }
 
-        public SASToggle(SASHandler handler, SASHandler.SASFunction function, Vector2 position, GameObject parent, Sprite spriteSymbol, Sprite spriteOff, Sprite spriteOn)
+        public SASToggle(SASUI handler, SASUI.SASFunction function, Vector2 position, GameObject parent, Sprite spriteSymbol, Sprite spriteOff, Sprite spriteOn)
         {
             this.handler = handler;
             this.function = function;
@@ -679,116 +689,108 @@ namespace MandatoryRCS
 
     }
     [KSPAddon(KSPAddon.Startup.Flight, false)]
-    public class MandatoryRCSNavBall : MonoBehaviour
+    public class NavBallHandler : MonoBehaviour
     {
-        public static MandatoryRCSNavBall instance;
 
         private NavBall navBall;
 
         private GameObject navballFrame;
-        
         private GameObject autoPilotModes;
-
         private GameObject collapseGroup;
 
-        private GameObject stability;
-        private GameObject maneuver;
-        private GameObject prograde;
-        private GameObject retrograde;
-        private GameObject normal;
-        private GameObject antinormal;
-        private GameObject radial;
-        private GameObject antiradial;
-        private GameObject target;
-        private GameObject antitarget;
+        //private GameObject stability;
+        //private GameObject maneuver;
+        //private GameObject prograde;
+        //private GameObject retrograde;
+        //private GameObject normal;
+        //private GameObject antinormal;
+        //private GameObject radial;
+        //private GameObject antiradial;
+        //private GameObject target;
+        //private GameObject antitarget;
+        //private GameObject SAS;
+        //private GameObject RCS;
 
-        private GameObject SAS;
-        private GameObject RCS;
-
-        private SASHandler handler;
+        private SASUI SASui;
 
         private bool customSASVisible = true;
 
+        public VesselModuleMandatoryRCS activeVM;
 
-        void LateUpdate()
+        private void Start()
         {
-            if (navBall == null && FlightGlobals.ready)
-            {
-                navBall = FindObjectOfType<NavBall>();
-
-                navballFrame = navBall.gameObject.transform.parent.parent.gameObject;
-
-                collapseGroup = navballFrame.gameObject.GetChild("IVAEVACollapseGroup");
-
-                autoPilotModes = navballFrame.gameObject.GetChild("AutopilotModes");
-
-                stability = autoPilotModes.GetChild("Stability");
-                maneuver = autoPilotModes.GetChild("Maneuver");
-                prograde = autoPilotModes.GetChild("Prograde");
-                retrograde = autoPilotModes.GetChild("Retrograde");
-                normal = autoPilotModes.GetChild("Normal");
-                antinormal = autoPilotModes.GetChild("AntiNormal");
-                radial = autoPilotModes.GetChild("Radial");
-                antiradial = autoPilotModes.GetChild("AntiRadial");
-                target = autoPilotModes.GetChild("Target");
-                antitarget = autoPilotModes.GetChild("AntiTarget");
-
-                autoPilotModes.SetActive(false);
-
-                SAS = navballFrame.gameObject.GetChild("SAS");
-                RCS = navballFrame.gameObject.GetChild("RCS");
-
-                handler = new SASHandler(collapseGroup);
-                instance = this;
-            }
+            GameEvents.onVesselSwitching.Add(onVesselSwitching);
         }
 
-        //public void EnableCustomSASUI(bool enable)
-        //{
-        //    if (enable != customSASEnabled)
-        //    {
-        //        handler.EnableSASPanel(enable);
-        //        customSASEnabled = enable;
-        //    }
-
-        //    if (enable == stockSASEnabled)
-        //    {
-        //        autoPilotModes.SetActive(!enable);
-        //        stockSASEnabled = !enable;
-        //    }
-        //}
-
-        public void FixedUpdate()
+        private void OnDestroy()
         {
-            if (handler == null) return;
+            GameEvents.onVesselSwitching.Remove(onVesselSwitching);
+        }
 
-            //if (!customSASEnabled) return;
+        private void FixedUpdate()
+        {
+            if (SASui == null) return;
 
             if (FlightGlobals.ActiveVessel.Autopilot.Enabled != customSASVisible)
             {
-                handler.EnableSASPanel(FlightGlobals.ActiveVessel.Autopilot.Enabled);
+                SASui.EnableSASPanel(FlightGlobals.ActiveVessel.Autopilot.Enabled);
                 customSASVisible = FlightGlobals.ActiveVessel.Autopilot.Enabled;
             }
 
-            if (FlightGlobals.speedDisplayMode != handler.GetContext())
+            if (FlightGlobals.speedDisplayMode != SASui.GetContext())
             {
-                handler.SetContext(FlightGlobals.speedDisplayMode);
+                SASui.SetContext(FlightGlobals.speedDisplayMode);
             }
 
-            handler.ManeuverActive(FlightGlobals.ActiveVessel.patchedConicSolver.maneuverNodes.Count != 0);
-            handler.TargetActive(FlightGlobals.ActiveVessel.targetObject != null);
-            handler.VelocityActive(FlightGlobals.GetDisplaySpeed() > 0.1);
-
+            SASui.ManeuverActive(FlightGlobals.ActiveVessel.patchedConicSolver.maneuverNodes.Count != 0);
+            SASui.TargetActive(FlightGlobals.ActiveVessel.targetObject != null);
+            SASui.VelocityActive(FlightGlobals.GetDisplaySpeed() > 0.1);
         }
 
-            //void OnClick(bool test)
-            //{
-            //    GameObject ButtonClicked = EventSystem.current.currentSelectedGameObject;
-            //    Debug.Log("ISON : " + ButtonClicked.GetComponent<Toggle>().isOn);
+        private void LateUpdate()
+        {
+            if (!FlightGlobals.ready || FlightGlobals.ActiveVessel == null) { return; }
 
-            //    //ButtonClicked.GetChild("Checkmark").SetActive(ButtonClicked.GetComponent<Toggle>().isOn);
-            //}
+            if (navBall == null)
+            {
+                if (FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleMandatoryRCS>().Count() == 0) { return; }
 
+                activeVM = FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleMandatoryRCS>().First();
 
+                navBall = FindObjectOfType<NavBall>();
+                navballFrame = navBall.gameObject.transform.parent.parent.gameObject;
+                collapseGroup = navballFrame.gameObject.GetChild("IVAEVACollapseGroup");
+                autoPilotModes = navballFrame.gameObject.GetChild("AutopilotModes");
+
+                //stability = autoPilotModes.GetChild("Stability");
+                //maneuver = autoPilotModes.GetChild("Maneuver");
+                //prograde = autoPilotModes.GetChild("Prograde");
+                //retrograde = autoPilotModes.GetChild("Retrograde");
+                //normal = autoPilotModes.GetChild("Normal");
+                //antinormal = autoPilotModes.GetChild("AntiNormal");
+                //radial = autoPilotModes.GetChild("Radial");
+                //antiradial = autoPilotModes.GetChild("AntiRadial");
+                //target = autoPilotModes.GetChild("Target");
+                //antitarget = autoPilotModes.GetChild("AntiTarget
+                //SAS = navballFrame.gameObject.GetChild("SAS");
+                //RCS = navballFrame.gameObject.GetChild("RCS");
+
+                autoPilotModes.SetActive(false);
+
+                SASui = new SASUI(collapseGroup, activeVM);
+            }
         }
+
+        // Detect active vessel change when switching vessel in the physics bubble
+        // Note : called before FlightGlobals.ActiveVessel is set, may lead to problems...
+        private void onVesselSwitching(Vessel fromVessel, Vessel toVessel)
+        {
+            if (toVessel.vesselModules.OfType<VesselModuleMandatoryRCS>().Count() > 0)
+            {
+                activeVM = toVessel.vesselModules.OfType<VesselModuleMandatoryRCS>().First();
+                SASui.activeVM = activeVM;
+                SASui.UpdateUIState();
+            }
+        }
+    }
 }

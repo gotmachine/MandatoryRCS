@@ -8,8 +8,8 @@ namespace MandatoryRCS
 {
     class DebugInfo : PartModule
     {
-        VesselModuleRotation vm;
-        ModuleTorqueController tc;
+        //VesselModuleRotation vm;
+        //ModuleTorqueController tc;
         ModuleReactionWheel rw;
 
         [KSPField(guiActive = true, guiName = "Ang. Velocity", guiFormat = "00.00")]
@@ -39,7 +39,7 @@ namespace MandatoryRCS
 
             
 
-            vm = vessel.vesselModules.OfType<VesselModuleRotation>().First();
+           // vm = vessel.vesselModules.OfType<VesselModuleRotation>().First();
             tc = part.Modules.GetModule<ModuleTorqueController>();
             rw = part.Modules.GetModule<ModuleReactionWheel>();
 
