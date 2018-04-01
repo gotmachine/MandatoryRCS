@@ -7,7 +7,7 @@ namespace MandatoryRCS
   // Should be allscenes, but there is a bug if called from the main menu
   // temp fix : settings aren't available from the main menu
   [KSPAddon(KSPAddon.Startup.AllGameScenes, false)]
-    class MandatoryRCSSettings : MonoBehaviour
+    class Settings : MonoBehaviour
     {
         // RW feature master switch
         public static bool featureReactionWheels;
@@ -169,7 +169,7 @@ namespace MandatoryRCS
 
         [GameParameters.CustomParameterUI("Enable reaction wheels rebalance",
              toolTip = "Disabling will revert to the stock behaviour.")]
-        public bool reactionWheelsNerf = !MandatoryRCSSettings.isPluginSaturatableRW;
+        public bool reactionWheelsNerf = !Settings.isPluginSaturatableRW;
 
         [GameParameters.CustomStringParameterUI("About ", autoPersistance = false, lines = 6)]
         public string aboutRW0 = "Reaction wheels force is heavily reduced on pilot & SAS rotation requests. Full force is provided if the SAS in \"Stability Assist\" mode or if you have reached the active SAS marker.";
@@ -201,7 +201,7 @@ namespace MandatoryRCS
 
         public override bool Enabled(MemberInfo member, GameParameters parameters)
         {
-            if (MandatoryRCSSettings.isPluginSaturatableRW)
+            if (Settings.isPluginSaturatableRW)
             {
                 if (member.Name == "autoDisabled")
                 { return true; }
@@ -269,7 +269,7 @@ namespace MandatoryRCS
 
         [GameParameters.CustomParameterUI("Enable rotation and SAS persistence",
              toolTip = "Disabling will revert to the stock behaviour.")]
-        public bool rotationPersistance = !MandatoryRCSSettings.isPluginPersistentRotation;
+        public bool rotationPersistance = !Settings.isPluginPersistentRotation;
 
         [GameParameters.CustomStringParameterUI("About ", autoPersistance = false, lines = 9)]
         public string aboutRSP = "This feature make the vessel rotation persistent through non-physics timewarps, when switching vessels and reloading. It also make the craft keep its orientation toward the SAS selection during timewarps. The SAS selection is remembered when switching vessels and reloading.";
@@ -280,7 +280,7 @@ namespace MandatoryRCS
 
         public override bool Enabled(MemberInfo member, GameParameters parameters)
         {
-            if (MandatoryRCSSettings.isPluginPersistentRotation)
+            if (Settings.isPluginPersistentRotation)
             {
                 if (member.Name == "autoDisabled")
                 { return true; }

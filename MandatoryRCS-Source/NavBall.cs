@@ -338,6 +338,7 @@ namespace MandatoryRCS
             if (FlightGlobals.ActiveVessel != null)
             {
                 activeVM.SASMode = function;
+                activeVM.hasSASModeChanged = true;
             }
         }
 
@@ -354,8 +355,25 @@ namespace MandatoryRCS
             {
                 activeVM.lockedRollMode = lockedRollMode;
                 activeVM.currentRoll = currentRoll;
+                activeVM.hasSASModeChanged = true;
             }
+        }
 
+        public void SetPitchMode(bool enabled, int newPitchOffset = 0)
+        {
+            pitchOffsetMode = enabled;
+            pitchOffset = newPitchOffset;
+            pitchDown.SetActive(enabled);
+            pitchUp.SetActive(enabled);
+            pitchReset.SetToggleState(enabled, false);
+            UpdatePitchSymbol();
+
+            if (FlightGlobals.ActiveVessel != null)
+            {
+                activeVM.pitchOffsetMode = pitchOffsetMode;
+                activeVM.pitchOffset = pitchOffset;
+                activeVM.hasSASModeChanged = true;
+            }
         }
 
         public void UpdateRollSymbol()
@@ -390,23 +408,6 @@ namespace MandatoryRCS
                     freeRoll.SetSymbolSprite(spriteFreeRoll);
                     break;
             }
-        }
-
-        public void SetPitchMode(bool enabled, int newPitchOffset = 0)
-        {
-            pitchOffsetMode = enabled;
-            pitchOffset = newPitchOffset;
-            pitchDown.SetActive(enabled);
-            pitchUp.SetActive(enabled);
-            pitchReset.SetToggleState(enabled, false);
-            UpdatePitchSymbol();
-
-            if (FlightGlobals.ActiveVessel != null)
-            {
-                activeVM.pitchOffsetMode = pitchOffsetMode;
-                activeVM.pitchOffset = pitchOffset;
-            }
-
         }
 
         public void UpdatePitchSymbol()
@@ -688,6 +689,7 @@ namespace MandatoryRCS
         }
 
     }
+
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class NavBallHandler : MonoBehaviour
     {

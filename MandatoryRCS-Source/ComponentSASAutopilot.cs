@@ -23,9 +23,25 @@ using UnityEngine;
  * 
 
     TODO :
-    // Disable target hold if navball context is changed
-    // Disable target hold if target was modified
-    // Disable target hold if the maneuver node was modified or deleted
+    - Disable target hold if navball context is changed
+    - Disable target hold if target was modified
+    - Disable target hold if the maneuver node was modified or deleted
+    - Disable target hold if control part is intentionally changed
+
+    - Implement the hold and holdsmooth SAS markers
+    - Fix the targetcorrected marker (and maybe remove the retrograde corrected, more tests needed on this)
+
+    OTHER WANTED FEATURES :
+    - Maximum relative angular velocity UI control -> slider in the SAS menu ?
+    - RCS auto mode -> RCS menu
+    - Global RCS throttle -> RCS menu
+    - RCS optimizer -> maybe at first something basic that disable non-optimized directions, this seems ok
+
+    - Navball markers for the currently registered SAS vector, for the target parallel/antiparallel and for the target corrected
+    - Maybe also a full navball controller that allow to move the sas pitch/yaw vector, using an overlay on the navball
+
+    - Node executor -> dependency on betterburntime ?
+    - Suicide burn executor -> dependency on betterburntime ?
 
     old code :
             private bool TargetHoldValidity()
@@ -79,10 +95,11 @@ using UnityEngine;
 namespace MandatoryRCS
 {
 
-    public class ComponentCustomSAS : MandatoryRCSComponent
+    public class ComponentSASAutopilot : ComponentBase
     {
         #region PID/ACTION
         public PIDControllerV3 pid;
+        public Vector3d act;
         public Vector3d lastAct = Vector3d.zero;
         public Vector3d pidAction;  //info
         public Vector3d error;  //info
@@ -103,230 +120,23 @@ namespace MandatoryRCS
 
         public double kWlimit = 0.15; // max angular velocity, we need to add a UI for that
 
-        protected Vector3d axisControl = Vector3d.one;
+        private readonly Vector3d defaultTfV = new Vector3d(0.3, 0.3, 0.3);
+
         #endregion
 
-        public override void OnStart()
+        public override void Start()
         {
             pid = new PIDControllerV3(Vector3d.zero, Vector3d.zero, Vector3d.zero, 1, -1);
             setPIDParameters();
             lastAct = Vector3d.zero;
-            vessel.OnPreAutopilotUpdate += new FlightInputCallback(SASUpdate);
-            base.OnStart();
+            //vessel.OnPreAutopilotUpdate += new FlightInputCallback(SASUpdate);
         }
 
-        //public override void OnLoad(ConfigNode c)
-        //{
-        //    base.OnLoad(c);
-        //    TfV = TfVec;
-        //}
-
-        //public override void OnSave(ConfigNode c)
-        //{
-        //    TfVec = TfV;
-        //    base.OnSave(c);
-        //}
-
-        public override void FixedUpdate()
+        public override void ComponentUpdate()
         {
-            // Update attitude in timewarp, needed for the persistant rotation component
-            // so it can follow the SAS target
-            if (FlightGlobals.ActiveVessel != null && vessel.loaded && vessel.packed)
-            {
-                UpdateRequestedAttitude();
-            }
-            
-        }
+            // Disable stock SAS
+            vessel.Autopilot.SAS.DisconnectFlyByWire();
 
-
-        // main callback
-        private void SASUpdate(FlightCtrlState s)
-        {
-            // Update context and enabled status
-            if (FlightGlobals.ActiveVessel == vessel)
-            {
-                vesselModule.SASContext = FlightGlobals.speedDisplayMode;
-                vesselModule.SASisEnabled = FlightGlobals.ActiveVessel.Autopilot.Enabled;
-            }
-
-            if (vesselModule.SASisEnabled)
-            {
-                // Disable stock SAS
-                vessel.Autopilot.SAS.DisconnectFlyByWire();
-
-                // Update requested attitude
-                UpdateRequestedAttitude();
-
-                // Calculate needed action
-                UpdateSASAction(s);
-            }
-
-        }
-
-        // Calculate requested attitude
-        private void UpdateRequestedAttitude()
-        {
-            
-            vesselModule.directionWanted = vessel.GetTransform().up;
-            vesselModule.attitudeWanted = Quaternion.identity;
-
-            Vector3 rollDirection = -vessel.GetTransform().forward;
-
-
-
-            // Get direction vector
-            switch (vesselModule.SASMode)
-            {
-                case SASUI.SASFunction.Prograde:
-                case SASUI.SASFunction.Retrograde:
-                    if (vesselModule.SASContext == FlightGlobals.SpeedDisplayModes.Orbit) // Orbit prograde
-                    { vesselModule.directionWanted = vessel.obt_velocity; }
-                    else if (vesselModule.SASContext == FlightGlobals.SpeedDisplayModes.Surface) // Surface prograde
-                    { vesselModule.directionWanted = vessel.srf_velocity; }
-                    else if (vesselModule.SASContext == FlightGlobals.SpeedDisplayModes.Target) // Target prograde
-                    {
-                        if (vessel.targetObject != null)
-                        { vesselModule.directionWanted = -(vessel.targetObject.GetObtVelocity() - vessel.obt_velocity); }
-                    }
-                    if (vesselModule.SASMode == SASUI.SASFunction.Retrograde) // Invert vector for retrograde
-                    {
-                        vesselModule.directionWanted = -vesselModule.directionWanted;
-                    }
-                    break;
-                case SASUI.SASFunction.Normal:
-                case SASUI.SASFunction.AntiNormal:
-                case SASUI.SASFunction.RadialOut:
-                case SASUI.SASFunction.RadialIn:
-                    // Get body up vector
-                    Vector3 planetUp = (vessel.rootPart.transform.position - vessel.mainBody.position).normalized;
-                    // Get normal vector
-                    Vector3 normal = new Vector3();
-                    if (vesselModule.SASContext == FlightGlobals.SpeedDisplayModes.Orbit) // Orbit
-                    { normal = Vector3.Cross(vessel.obt_velocity, planetUp).normalized; }
-                    else // Surface/Target (seems to be the same for normal/radial)
-                    { normal = Vector3.Cross(vessel.srf_velocity, planetUp).normalized; }
-
-                    // Return normal/antinormal or calculate radial
-                    if (vesselModule.SASMode == SASUI.SASFunction.Normal) // Normal
-                    { vesselModule.directionWanted = normal; }
-                    else if (vesselModule.SASMode == SASUI.SASFunction.AntiNormal) // AntiNormal
-                    { vesselModule.directionWanted = -normal; }
-                    else
-                    {
-                        // Get RadialIn vector
-                        Vector3 radial = new Vector3();
-                        if (vesselModule.SASContext == FlightGlobals.SpeedDisplayModes.Orbit) // Orbit
-                        { radial = Vector3.Cross(vessel.obt_velocity, normal).normalized; }
-                        else // Surface/Target (seems to be the same for normal/radial)
-                        { radial = Vector3.Cross(vessel.srf_velocity, normal).normalized; }
-
-                        // Return radial vector
-                        if (vesselModule.SASMode == SASUI.SASFunction.RadialIn) // Radial In
-                        { vesselModule.directionWanted = radial; }
-                        else if (vesselModule.SASMode == SASUI.SASFunction.RadialOut) // Radial Out
-                        { vesselModule.directionWanted = -radial; }
-                    }
-                    break;
-                case SASUI.SASFunction.Maneuver:
-                    if (vessel.patchedConicSolver.maneuverNodes.Count < 1) { break; }
-                    vesselModule.directionWanted = vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(vessel.orbit);
-                    break;
-                case SASUI.SASFunction.Target:
-                    if (vessel.targetObject == null) { break; }
-                    vesselModule.directionWanted = vessel.targetObject.GetTransform().position - vessel.transform.position;
-                    break;
-                case SASUI.SASFunction.AntiTarget:
-                    if (vessel.targetObject == null) { break; }
-                    vesselModule.directionWanted = -(vessel.targetObject.GetTransform().position - vessel.transform.position);
-                    break;
-                case SASUI.SASFunction.Parallel:
-                    if (vessel.targetObject == null) { break; }
-                    vesselModule.directionWanted = vessel.targetObject.GetTransform().up;
-                    break;
-                case SASUI.SASFunction.AntiParallel:
-                    if (vessel.targetObject == null) { break; }
-                    vesselModule.directionWanted = -(vessel.targetObject.GetTransform().up);
-                    break;
-                case SASUI.SASFunction.ProgradeCorrected:
-                case SASUI.SASFunction.RetrogradeCorrected:
-                    if (vessel.targetObject == null) { break; }
-                    Vector3 targetDirInv = vessel.transform.position - vessel.targetObject.GetTransform().position;
-                    Vector3 targetRelVel = vessel.GetObtVelocity() - vessel.targetObject.GetObtVelocity();
-
-                    Vector3 correction = Vector3.ProjectOnPlane(-targetRelVel,targetDirInv);
-
-                    // Avoid chasing the target when relative velocity is very low
-                    if (correction.magnitude < 0.05)
-                    {
-                        vesselModule.directionWanted = -targetDirInv;
-                        break;
-                    }
-                    // approch target direction
-                    else
-                    {
-                        correction = correction * ((targetDirInv.magnitude / correction.magnitude) * Math.Max(correction.magnitude / targetDirInv.magnitude, 1.0f)) ;
-                    }
-
-                    vesselModule.directionWanted = correction - targetDirInv;
-
-                    if (vesselModule.SASMode == SASUI.SASFunction.RetrogradeCorrected)
-                    {
-                        vesselModule.directionWanted = -vesselModule.directionWanted;
-                    }
-                    break;
-
-                    //Vector3 projection = targetPos.normalized + Vector3.ProjectOnPlane(targetvel, targetPos);
-                    //float projectionMagn = projection.magnitude;
-                    //projection = projectionMagn > 1.0f ? projection / projectionMagn * 1.0f : projection;
-                    //direction = vessel.ReferenceTransform.InverseTransformDirection(projection.normalized);
-
-            }
-
-            // Get orientation
-            switch (vesselModule.SASMode)
-            {
-                case SASUI.SASFunction.Hold:
-                    vesselModule.attitudeWanted = Quaternion.LookRotation(vessel.GetTransform().up, -vessel.GetTransform().forward);
-                    break;
-                case SASUI.SASFunction.HoldSmooth:
-                    vesselModule.attitudeWanted = Quaternion.LookRotation(vessel.GetTransform().up, -vessel.GetTransform().forward);
-                    break;
-                case SASUI.SASFunction.KillRot:
-                    vesselModule.attitudeWanted = Quaternion.LookRotation(vessel.GetTransform().up, -vessel.GetTransform().forward);
-                    break;
-                default:
-                    // Define the roll reference
-                    Vector3 rollRef = Vector3.zero;
-                    switch (vesselModule.SASContext)
-                    {
-                        case FlightGlobals.SpeedDisplayModes.Orbit:
-                            rollRef = (vessel.rootPart.transform.position - vessel.mainBody.position).normalized;
-                            break;
-                        case FlightGlobals.SpeedDisplayModes.Surface:
-                            rollRef = (vessel.rootPart.transform.position - vessel.mainBody.position).normalized;
-                            break;
-                        case FlightGlobals.SpeedDisplayModes.Target:
-                            rollRef = -vessel.targetObject.GetTransform().forward;
-                            break;
-                    }
-                    vesselModule.attitudeWanted = Quaternion.LookRotation(vesselModule.directionWanted, rollRef);
-                    
-
-                    if (vesselModule.lockedRollMode)
-                    {
-                        vesselModule.attitudeWanted *= Quaternion.Euler(0, 0, -vesselModule.currentRoll);
-                        axisControl.y = 1;
-                    }
-                    else
-                    {
-                        axisControl.y = 0;
-                    }
-                    break;
-            }
-        }
-
-        public void UpdateSASAction(FlightCtrlState s)
-        {
             Transform vesselTransform = vessel.ReferenceTransform;
             //Quaternion delta = Quaternion.Inverse(Quaternion.Euler(90, 0, 0) * Quaternion.Inverse(vesselTransform.rotation) * _requestedAttitude);
 
@@ -337,32 +147,33 @@ namespace MandatoryRCS
 
             double turnAngle = Math.Abs(Vector3d.Angle(curLocalUp, tgtLocalUp));
             Vector2d rotDirection = new Vector2d(tgtLocalUp.x, tgtLocalUp.z);
-            rotDirection = rotDirection.normalized * turnAngle / 180.0;
+            rotDirection = rotDirection.normalized * turnAngle;
 
             // And the lowest roll
             // Thanks to Crzyrndm
             Vector3 normVec = Vector3.Cross(vesselModule.attitudeWanted * Vector3.forward, vesselTransform.up);
-            Quaternion targetDeRotated = Quaternion.AngleAxis((float)turnAngle, normVec) * vesselModule.attitudeWanted;
-            float rollError = Vector3.Angle(vesselTransform.right, targetDeRotated * Vector3.right) * Math.Sign(Vector3.Dot(targetDeRotated * Vector3.right, vesselTransform.forward));
+            Quaternion targetDeRotated = Quaternion.AngleAxis((float) turnAngle, normVec) * vesselModule.attitudeWanted;
+            float rollError = Vector3.Angle(vesselTransform.right, targetDeRotated * Vector3.right) *
+                              Math.Sign(Vector3.Dot(targetDeRotated * Vector3.right, vesselTransform.forward));
 
             // From here everything should use MOI order for Vectors (pitch, roll, yaw)
             error = new Vector3d(
-                -rotDirection.y * Math.PI,
+                -rotDirection.y * Mathf.Deg2Rad,
                 rollError * Mathf.Deg2Rad,
-                rotDirection.x * Math.PI
+                rotDirection.x * Mathf.Deg2Rad
                 );
 
-            error.Scale(axisControl);
+            if (!vesselModule.lockedRollMode) { error.y = 0; }
 
-            Vector3d err = error + vesselModule.inertia * 0.5;
+            Vector3d err = error + vesselModule.angularDistanceToStop;
             err = new Vector3d(
                 Math.Max(-Math.PI, Math.Min(Math.PI, err.x)),
                 Math.Max(-Math.PI, Math.Min(Math.PI, err.y)),
                 Math.Max(-Math.PI, Math.Min(Math.PI, err.z)));
 
             // ( MoI / available torque ) factor:
-            Vector3d NormFactor = Vector3d.Scale(vessel.MOI, vesselModule.torqueAvailable.InvertNoNaN());
-
+            Vector3d NormFactor = Vector3d.Scale(vesselModule.MOI, vesselModule.torqueAvailable.InvertNoNaN());
+           
             err.Scale(NormFactor);
 
             // angular velocity:
@@ -377,9 +188,9 @@ namespace MandatoryRCS
             setPIDParameters();
 
             // angular velocity limit:
-            var Wlimit = new Vector3d( Math.Sqrt(NormFactor.x * Math.PI * kWlimit),
-                                        Math.Sqrt(NormFactor.y * Math.PI * kWlimit),
-                                        Math.Sqrt(NormFactor.z * Math.PI * kWlimit));
+            var Wlimit = new Vector3d(Math.Sqrt(NormFactor.x * Math.PI * kWlimit),
+                Math.Sqrt(NormFactor.y * Math.PI * kWlimit),
+                Math.Sqrt(NormFactor.z * Math.PI * kWlimit));
 
             pidAction = pid.Compute(err, omega, Wlimit);
 
@@ -389,7 +200,7 @@ namespace MandatoryRCS
             pidAction.z = Math.Abs(pidAction.z) >= deadband ? pidAction.z : 0.0;
 
             // low pass filter,  wf = 1/Tf:
-            Vector3d act = lastAct;
+            act = lastAct;
             if (lowPassFilter)
             {
                 act.x += (pidAction.x - lastAct.x) * (1.0 / ((TfV.x / TimeWarp.fixedDeltaTime) + 1.0));
@@ -404,9 +215,9 @@ namespace MandatoryRCS
 
             Vector3d deltaEuler = error * UtilMath.Rad2Deg;
 
-            SetFlightCtrlState(act, deltaEuler, s, 1);
+            SetFlightCtrlState(act, deltaEuler, vesselModule.flightCtrlState, 1);
 
-            act = new Vector3d(s.pitch, s.roll, s.yaw);
+            act = new Vector3d(vesselModule.flightCtrlState.pitch, vesselModule.flightCtrlState.roll, vesselModule.flightCtrlState.yaw);
 
         }
 
@@ -425,7 +236,7 @@ namespace MandatoryRCS
             //}
             if (userCommandingPitchYaw || userCommandingRoll)
             {
-                pid.Reset();
+                Reset();
             }
 
             if (!userCommandingRoll)
@@ -475,12 +286,17 @@ namespace MandatoryRCS
             //}
         } // end of SetFlightCtrlState
 
+        public void Reset()
+        {
+            pid.Reset();
+        }
+
         public void tuneTf(Vector3d torque)
         {
             Vector3d ratio = new Vector3d(
-                torque.x != 0 ? vessel.MOI.x / torque.x : 0,
-                torque.y != 0 ? vessel.MOI.y / torque.y : 0,
-                torque.z != 0 ? vessel.MOI.z / torque.z : 0
+                torque.x != 0 ? vesselModule.MOI.x / torque.x : 0,
+                torque.y != 0 ? vesselModule.MOI.y / torque.y : 0,
+                torque.z != 0 ? vesselModule.MOI.z / torque.z : 0
                 );
 
             TfV = 0.05 * ratio;
@@ -496,7 +312,8 @@ namespace MandatoryRCS
 
         public void setPIDParameters()
         {
-            Vector3d invTf = TfV.InvertNoNaN();
+            Vector3d invTf = (Tf_autoTune ? TfV : defaultTfV).InvertNoNaN();
+
             pid.Kd = kdFactor * invTf;
 
             pid.Kp = (1 / (kpFactor * Math.Sqrt(2))) * pid.Kd;
@@ -510,11 +327,14 @@ namespace MandatoryRCS
 
         public void ResetConfig()
         {
+            TfV = defaultTfV;
             TfMin = 0.1;
             TfMax = 0.5;
             kpFactor = 3;
             kiFactor = 6;
             kdFactor = 0.5;
+            deadband = 0.0001;
+            kWlimit = 0.15;
         }
 
     }
@@ -583,7 +403,7 @@ namespace MandatoryRCS
 
 
 
-    public class PIDControllerV3 : IConfigNode
+    public class PIDControllerV3 //: IConfigNode
     {
         public Vector3d Kp, Ki, Kd, intAccum, derivativeAct, propAct;
         public double max, min;
@@ -632,28 +452,28 @@ namespace MandatoryRCS
             intAccum = Vector3d.zero;
         }
 
-        public void Load(ConfigNode node)
-        {
-            if (node.HasValue("Kp"))
-            {
-                Kp = ConfigNode.ParseVector3D(node.GetValue("Kp"));
-            }
-            if (node.HasValue("Ki"))
-            {
-                Ki = ConfigNode.ParseVector3D(node.GetValue("Ki"));
-            }
-            if (node.HasValue("Kd"))
-            {
-                Kd = ConfigNode.ParseVector3D(node.GetValue("Kd"));
-            }
-        }
+        //public void Load(ConfigNode node)
+        //{
+        //    if (node.HasValue("Kp"))
+        //    {
+        //        Kp = ConfigNode.ParseVector3D(node.GetValue("Kp"));
+        //    }
+        //    if (node.HasValue("Ki"))
+        //    {
+        //        Ki = ConfigNode.ParseVector3D(node.GetValue("Ki"));
+        //    }
+        //    if (node.HasValue("Kd"))
+        //    {
+        //        Kd = ConfigNode.ParseVector3D(node.GetValue("Kd"));
+        //    }
+        //}
 
-        public void Save(ConfigNode node)
-        {
-            node.SetValue("Kp", Kp.ToString());
-            node.SetValue("Ki", Ki.ToString());
-            node.SetValue("Kd", Kd.ToString());
-        }
+        //public void Save(ConfigNode node)
+        //{
+        //    node.SetValue("Kp", Kp.ToString());
+        //    node.SetValue("Ki", Ki.ToString());
+        //    node.SetValue("Kd", Kd.ToString());
+        //}
     }
 
 }

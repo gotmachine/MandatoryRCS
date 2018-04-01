@@ -6,17 +6,18 @@ using UnityEngine;
 
 namespace MandatoryRCS
 {
-    public class ComponentPersistantRotation : MandatoryRCSComponent
+    public class ComponentPersistantRotation : ComponentBase
     {
-        public override void FixedUpdate()
+        public override void ComponentUpdate()
         {
             // Vessel is loaded but not in physics, either because 
             // - It is in the physics bubble but in non-psysics timewarp
             // - It has gone outside of the physics bubble
             // - It was just loaded, is in the physics bubble and will be unpacked in a few frames
-            if (vessel.loaded && vessel.packed)
+            //if (vessel.loaded && vessel.packed)
+            if (vesselModule.currentState == VesselModuleMandatoryRCS.VesselState.Packed)
             {
-                // We keep the vessel rotated toward the autopilot selection
+                // If the SAS is locked, we keep the vessel rotated toward the autopilot selection
                 if (vesselModule.SASModeLock)
                 {
                     if (vesselModule.lockedRollMode)
@@ -28,46 +29,41 @@ namespace MandatoryRCS
                         SetVesselAttitude(vesselModule.directionWanted);
                     }
                 }
-                // Else rotate the vessel according to its angular velocity
-                else if (vesselModule.angularMomentum.magnitude > MandatoryRCSSettings.velocityThreesold)
+                // else rotate the vessel according to its angular velocity
+                else if (vesselModule.angularVelocity.magnitude > Settings.velocityThreesold)
                 {
-                    RotatePackedVessel(vesselModule.angularMomentum);
+                    RotatePackedVessel(vesselModule.angularVelocity);
                 }
             }
 
             // Vessel is fully loaded and in physics
-            else if (vessel.loaded && !vessel.packed && FlightGlobals.ready)
+            // else if (vessel.loaded && !vessel.packed && FlightGlobals.ready)
+            else if (vesselModule.isInPhysicsFirstFrame)
             {
-                // We just entered in physics
-                if (vesselModule.isInPhysicsFirstFrame)
+                // Restore the vessel attitude according to the autopilot selection
+                if (vesselModule.SASModeLock)
                 {
-                    // Restore the vessel attitude according to the autopilot selection
-                    if (vesselModule.SASModeLock)
+                    if (vesselModule.lockedRollMode)
                     {
-                        if (vesselModule.lockedRollMode)
-                        {
-                            SetVesselAttitude(vesselModule.attitudeWanted * Quaternion.Euler(90, 0, 0));
-                        }
-                        else
-                        {
-                            SetVesselAttitude(vesselModule.directionWanted);
-                        }
+                        SetVesselAttitude(vesselModule.attitudeWanted * Quaternion.Euler(90, 0, 0));
                     }
-
-                    // Restore the angular momentum
-                    if (vesselModule.angularMomentum.magnitude > MandatoryRCSSettings.velocityThreesold)
+                    else
                     {
-                        SetVesselAngularMomentum(vesselModule.angularMomentum);
+                        SetVesselAttitude(vesselModule.directionWanted);
                     }
                 }
-                // Are we locked on the SAS requested direction ?
-                SetSASModeLock();
+
+                // Restore the angular velocity
+                if (vesselModule.angularVelocity.magnitude > Settings.velocityThreesold)
+                {
+                    SetVesselAngularVelocity(vesselModule.angularVelocity);
+                }
             }
         }
 
         // Apply an angular momentum to the vessel
         // This should only be used on a fully loaded in physics vessel
-        private void SetVesselAngularMomentum(Vector3 angularMomentum)
+        private void SetVesselAngularVelocity(Vector3 angularVelocity)
         {
             if (!vessel.loaded || !FlightGlobals.ready)
             { return; }
@@ -83,8 +79,8 @@ namespace MandatoryRCS
             foreach (Part p in vessel.parts)
             {
                 if (!p.GetComponent<Rigidbody>()) continue;
-                p.GetComponent<Rigidbody>().AddTorque(rotation * angularMomentum, ForceMode.VelocityChange);
-                p.GetComponent<Rigidbody>().AddForce(Vector3.Cross(rotation * angularMomentum, (p.transform.position - COM)), ForceMode.VelocityChange);
+                p.GetComponent<Rigidbody>().AddTorque(rotation * angularVelocity, ForceMode.VelocityChange);
+                p.GetComponent<Rigidbody>().AddForce(Vector3.Cross(rotation * angularVelocity, (p.transform.position - COM)), ForceMode.VelocityChange);
                 // Note :
                 // Doing this trough rigidbodies is depreciated but I can't find a way to use the 1.2 part.addforce/addtorque to provide reliable results
                 // see 1.2 patchnotes and unity docs for ForceMode.VelocityChange/ForceMode.Force
@@ -93,7 +89,7 @@ namespace MandatoryRCS
 
         // Update the vessel rotation according to the provided angular momentum
         // Should only be used on a loaded and packed vessel (a vessel in non-physics timewarp)
-        private void RotatePackedVessel(Vector3 angularMomentum)
+        private void RotatePackedVessel(Vector3 angularVelocity)
         {
             if (!(vessel.loaded && vessel.packed))
             { return; }
@@ -101,7 +97,7 @@ namespace MandatoryRCS
             if (vessel.situation == Vessel.Situations.PRELAUNCH || vessel.situation == Vessel.Situations.LANDED || vessel.situation == Vessel.Situations.SPLASHED)
             { return; }
 
-            vessel.SetRotation(Quaternion.AngleAxis(angularMomentum.magnitude * TimeWarp.CurrentRate, vessel.ReferenceTransform.rotation * angularMomentum) * vessel.transform.rotation, true);
+            vessel.SetRotation(Quaternion.AngleAxis(angularVelocity.magnitude * TimeWarp.CurrentRate, vessel.ReferenceTransform.rotation * angularVelocity) * vessel.transform.rotation, true);
         }
 
         private void SetVesselAttitude(Quaternion attitude)
@@ -116,26 +112,6 @@ namespace MandatoryRCS
         {
             SetVesselAttitude(Quaternion.FromToRotation(vessel.GetTransform().up, direction) * vessel.transform.rotation);
         }
-
-        private void SetSASModeLock()
-        {
-            // Checking if the autopilot hold mode should be enabled
-            if (vessel.Autopilot.Enabled
-                && vesselModule.SASMode != SASUI.SASFunction.KillRot
-                && vesselModule.SASMode != SASUI.SASFunction.Hold
-                && vesselModule.SASMode != SASUI.SASFunction.HoldSmooth
-                //&& (wheelsTotalMaxTorque > Single.Epsilon) // We have some reaction wheels
-                && vesselModule.angularMomentum.magnitude < MandatoryRCSSettings.velocityThreesold * 2 // The vessel isn't rotating too much
-                && Math.Max(Vector3.Dot(vesselModule.directionWanted.normalized, vessel.GetTransform().up.normalized), 0) > 0.975f) // 1.0 = toward target, 0.0 = target is at a 90° angle, previously 0.95
-            {
-                vesselModule.SASModeLock = true;
-            }
-            else
-            {
-                vesselModule.SASModeLock = false;
-            }
-        }
-
     }
 }
 
