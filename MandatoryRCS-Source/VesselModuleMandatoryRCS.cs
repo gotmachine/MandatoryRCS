@@ -1,9 +1,11 @@
 ﻿using MandatoryRCS.Lib;
+using MandatoryRCS.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using static MandatoryRCS.ComponentSASAttitude;
 
 namespace MandatoryRCS
 {
@@ -22,9 +24,9 @@ namespace MandatoryRCS
         public VesselState currentState;
         public bool isInPhysicsFirstFrame;
         public bool playerControlled;
-
-        // Used by the persistent rotation component
-        //public bool isInPhysics;
+        public bool pilotIsIdle;
+        public FlightCtrlState flightCtrlState;
+        public ITargetable currentTarget;
         #endregion
 
         #region Vessel physics info
@@ -35,40 +37,46 @@ namespace MandatoryRCS
         public Vector3d torqueAvailable;
         public Vector3d angularDistanceToStop; // inertia in MechJeb VesselState
         public Vector3d torqueReactionSpeed;
-        public bool pilotIsIdle;
-        public FlightCtrlState flightCtrlState;
         #endregion
 
         #region SAS
         // True if we are keeping the vessel oriented toward the SAS target
         [KSPField(isPersistant = true)]
-        public bool SASisEnabled = false;
+        public bool autopilotEnabled = false;
 
         [KSPField(isPersistant = true)]
-        public bool SASModeLock = false;
+        public bool autopilotPersistentModeLock = false;
 
         [KSPField(isPersistant = true)]
-        public SASUI.SASFunction SASMode = SASUI.SASFunction.KillRot;
+        public SASMode autopilotMode = SASMode.KillRot;
 
         [KSPField(isPersistant = true)]
-        public FlightGlobals.SpeedDisplayModes SASContext = FlightGlobals.SpeedDisplayModes.Orbit;
+        public FlightGlobals.SpeedDisplayModes autopilotContext = FlightGlobals.SpeedDisplayModes.Orbit;
 
         [KSPField(isPersistant = true)]
         public bool lockedRollMode = false;
-
-        [KSPField(isPersistant = true)]
-        public bool pitchOffsetMode = false;
-
         [KSPField(isPersistant = true)]
         public int currentRoll = 0;
 
         [KSPField(isPersistant = true)]
-        public int pitchOffset = 0;
+        public bool rcsAutoMode = false;
+        [KSPField(isPersistant = true)]
+        public int velocityLimiter = 15;
+        [KSPField(isPersistant = true)]
+        public bool sunIsTarget = false;
 
-        public Quaternion attitudeWanted;
-        public Vector3 directionWanted;
-        public bool hasSASModeChanged = false;
+        public Quaternion autopilotAttitudeWanted;
+        public Vector3d autopilotDirectionWanted;
+        public bool flyByWire = false;
+        public bool autopilotModeHasChanged = false;
+        public bool hasManeuverNode = false;
+
         #endregion
+
+        public bool rwLockedOnDirection;
+
+        public bool ready = false;
+        public int frameNumber = 0;
 
         // Components :
 
@@ -102,15 +110,41 @@ namespace MandatoryRCS
                 component.Start();
             }
 
-            vessel.OnPreAutopilotUpdate += new FlightInputCallback(VesselModuleUpdate);
+            // Note : OnPreAutopilotUpdate seems to be called AFTER the vesselModule FixedUpdate();
+            vessel.OnPreAutopilotUpdate -= LoadedUpdate;
+            vessel.OnPreAutopilotUpdate += LoadedUpdate;
+
+            GameEvents.onVesselLoaded.Add(onVesselLoaded);
+                //new EventData<Vessel, Vessel>("onVesselSwitchingToUnloaded")
         }
 
-        private void VesselModuleUpdate(FlightCtrlState s = null)
+        private void OnDestroy()
+        {
+            //vessel.OnPreAutopilotUpdate -= LoadedUpdate; // This cause a nullref at startup !?!
+        }
+
+        public override void OnUnloadVessel()
+        {
+            
+
+        }
+
+        private void onVesselLoaded(Vessel vessel)
+        {
+            // On load, stock throw an exception if the Sun is the target, so we reset it before unloading
+            if (vessel.protoVessel.targetInfo.uniqueName == "Sun")
+            {
+                vessel.protoVessel.targetInfo.uniqueName = "";
+                vessel.protoVessel.targetInfo.targetType = ProtoTargetInfo.Type.Null;
+            }
+        }
+
+        private void LoadedUpdate(FlightCtrlState s = null)
         {
             // Save FlightCtrlState
             flightCtrlState = s;
 
-            // Update physics status
+            // Update physics and control state
             UpdateVesselState();
 
             // Update angular velocity for in physics vessels
@@ -119,53 +153,79 @@ namespace MandatoryRCS
                 angularVelocity = Vessel.angularVelocityD;
             }
 
-            // Rotate the vessel according to angular velocity
-            // and SAS state
-            if (hasSASModeChanged) { SASModeLock = false; }
+            // Update the SAS state and get the requested attitude
+            if (autopilotModeHasChanged) { autopilotPersistentModeLock = false; }
             sasAttitude.ComponentUpdate();
+            // Then rotate the vessel according to the angular velocity or the SAS request
             persistentRotation.ComponentUpdate();
 
-            // Update physics info and reaction wheels list
+            // Update autopilot things
             if (currentState == VesselState.InPhysics)
             {
-                UpdateMoI(); // Update MoI first;
-                pilotIsIdle = s != null && s.isIdle; // Is the player currently steering this vessel ?
-                torqueControl.ComponentUpdate(); // Then adjust the reaction wheels torque
-                UpdateTorque(); // Then calculate the vessel torque
-            }
+                // Is the player currently steering this vessel ?
+                pilotIsIdle = s != null && s.isIdle;
+                // Now that we know what the pilot is doing, adjust the reaction wheels torque
+                torqueControl.ComponentUpdate();
 
-            // Get UI interactions about SAS context and enabled status
-            if (playerControlled)
-            {
-                SASContext = FlightGlobals.speedDisplayMode;
-                SASisEnabled = FlightGlobals.ActiveVessel.Autopilot.Enabled;
+                if (autopilotEnabled && s != null)
+                {
+                    // Update MoI first, it isn't dependent on anything else
+                    UpdateMoI();
+                    // We know how reaction wheels will behave, set RCS auto mode
+                    // TODO : check if we need to reset the SAS PID on RCS enable/disable-> sasAutopilot.Reset()
+                    RCSAutoSet();
+                    // Finally calculate the available torque
+                    UpdateTorque();
+                    // It's time to calculate how the autopilot should steer the vessel;
+                    if (autopilotModeHasChanged) { sasAutopilot.Reset(); }
+                    sasAutopilot.ComponentUpdate();
+                }
             }
-
-            // It's time to calculate how the autopilot should steer the vessel;
-            if (s != null && SASisEnabled)
-            {
-                if (hasSASModeChanged) { sasAutopilot.Reset(); }
-                sasAutopilot.ComponentUpdate();
-            }
-
             // Reset the SAS mode change flag
-            if (hasSASModeChanged) { hasSASModeChanged = false; }
+            if (autopilotModeHasChanged) { autopilotModeHasChanged = false; }
+
+            // Ensure we have done all this at last once
+            // Used by the navball UI, which should not be initialized before everything has been checked.
+            ready = true;
         }
 
         private void FixedUpdate()
         {
-            // Do the update on all vessels except the one that is currently active (if any), if it is in physics.
-            // In this specific situation, this update is handled in the OnPreAutopilotUpdate callback
-            if (vessel.loaded // It is loaded
-                && !vessel.packed // It is in physics
-                && FlightGlobals.ready // Physics are ready
-                && FlightGlobals.ActiveVessel != null // there is an active vessel
-                && FlightGlobals.ActiveVessel == vessel) // and it is the current one
+            if (!vessel.loaded)
             {
                 return;
             }
 
-            VesselModuleUpdate();
+            
+            frameNumber += 1;
+
+            // Note : don't check for FlightGlobals.ready here
+            if (FlightGlobals.ActiveVessel == vessel && !vessel.packed) return;
+
+
+            //frameNumber += 1;
+            //// Do the update on all vessels except the one that is currently active (if any), if it is in physics.
+            //// In this specific situation, this update is handled in the OnPreAutopilotUpdate callback
+            //if (vessel.loaded // It is loaded
+            //    && !vessel.packed // It is in physics
+            //    && FlightGlobals.ready // Physics are ready
+            //    && FlightGlobals.ActiveVessel != null // there is an active vessel
+            //    && FlightGlobals.ActiveVessel == vessel) // and it is the current one
+            //{
+            //    return;
+            //}
+
+            LoadedUpdate();
+        }
+
+        private void RCSAutoSet()
+        {
+            if (rcsAutoMode)
+            {
+                bool enabled;
+                enabled = !rwLockedOnDirection && vessel.staticPressurekPa < 20;
+                vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, enabled);
+            }
         }
 
         private void UpdateVesselState()
@@ -213,7 +273,9 @@ namespace MandatoryRCS
             Vector6 torqueControlSurface = new Vector6();
             Vector6 torqueGimbal = new Vector6();
             Vector6 torqueOthers = new Vector6();
-            Vector6 torqueReactionSpeed6 = new Vector6();
+            //Vector6 torqueReactionSpeed6 = new Vector6();
+            Vector6 reactionSpeedControlSurface6 = new Vector6();
+            Vector6 reactionSpeedGimbal6 = new Vector6();
 
             for (int i = 0; i < vessel.parts.Count; i++)
             {
@@ -245,7 +307,8 @@ namespace MandatoryRCS
                         torqueControlSurface.Add(ctrlTorquePos);
                         torqueControlSurface.Add(ctrlTorqueNeg);
 
-                        torqueReactionSpeed6.Add(Mathf.Abs(cs.ctrlSurfaceRange) / cs.actuatorSpeed * Vector3d.Max(ctrlTorquePos.Abs(), ctrlTorqueNeg.Abs()));
+                        //torqueReactionSpeed6.Add(Mathf.Abs(cs.ctrlSurfaceRange) / cs.actuatorSpeed * Vector3d.Max(ctrlTorquePos.Abs(), ctrlTorqueNeg.Abs()));
+                        reactionSpeedControlSurface6.Add(Mathf.Abs(cs.ctrlSurfaceRange) / cs.actuatorSpeed * Vector3.Max(ctrlTorquePos.Abs(), ctrlTorqueNeg.Abs()));
 
                     }
                     else if (pm is ModuleGimbal)
@@ -265,7 +328,7 @@ namespace MandatoryRCS
                             torqueGimbal.Add(pos);
                             torqueGimbal.Add(-neg);
                             if (g.useGimbalResponseSpeed)
-                                torqueReactionSpeed6.Add((Mathf.Abs(g.gimbalRange) / g.gimbalResponseSpeed) * Vector3d.Max(pos.Abs(), neg.Abs()));
+                                reactionSpeedGimbal6.Add((Mathf.Abs(g.gimbalRange) / g.gimbalResponseSpeed) * Vector3d.Max(pos.Abs(), neg.Abs()));
                         }
                         catch (Exception)
                         {
@@ -327,24 +390,39 @@ namespace MandatoryRCS
                 }
             }
 
-            Vector3d torqueAvailable = Vector3d.zero;
+            // Torque and Reaction speed for control surfaces
+            Vector3d torqueAvailableControlSurface = Vector3d.Max(torqueControlSurface.positive, torqueControlSurface.negative);
+            Vector3d reactionSpeedControlSurface = Vector3d.Max(reactionSpeedControlSurface6.positive, reactionSpeedControlSurface6.negative);
+            reactionSpeedControlSurface.Scale(torqueAvailableControlSurface.InvertNoNaN());
+
+            // Torque and Reaction speed for gimbal
+            Vector3d torqueAvailableGimbal = Vector3d.Max(torqueGimbal.positive, torqueGimbal.negative);
+            Vector3d reactionSpeedGimbal = Vector3d.Max(reactionSpeedGimbal6.positive, reactionSpeedGimbal6.negative);
+            reactionSpeedGimbal.Scale(torqueAvailableGimbal.InvertNoNaN());
+
+            // Set torque
+            torqueAvailable = Vector3d.zero;
             torqueAvailable += Vector3d.Max(torqueReactionWheel.positive, torqueReactionWheel.negative);
             torqueAvailable += Vector3d.Max(rcsTorqueAvailable.positive, rcsTorqueAvailable.negative);
-            torqueAvailable += Vector3d.Max(torqueControlSurface.positive, torqueControlSurface.negative);
-            torqueAvailable += Vector3d.Max(torqueGimbal.positive, torqueGimbal.negative);
             torqueAvailable += Vector3d.Max(torqueOthers.positive, torqueOthers.negative);
+            torqueAvailable += torqueAvailableControlSurface;
+            torqueAvailable += torqueAvailableGimbal;
 
-            this.torqueAvailable = torqueAvailable;
+            // Set reaction speed
+            torqueReactionSpeed = Vector3d.zero;
+            torqueReactionSpeed += reactionSpeedControlSurface;
+            torqueReactionSpeed += reactionSpeedGimbal;
 
-            if (torqueAvailable.sqrMagnitude > 0)
-            {
-                torqueReactionSpeed = Vector3d.Max(torqueReactionSpeed6.positive, torqueReactionSpeed6.negative);
-                torqueReactionSpeed.Scale(torqueAvailable.InvertNoNaN());
-            }
-            else
-            {
-                torqueReactionSpeed = Vector3d.zero;
-            }
+            // original MechJeb ReactionSpeed code
+            //if (torqueAvailable.sqrMagnitude > 0)
+            //{
+            //    torqueReactionSpeed = Vector3d.Max(torqueReactionSpeed6.positive, torqueReactionSpeed6.negative);
+            //    torqueReactionSpeed.Scale(torqueAvailable.InvertNoNaN());
+            //}
+            //else
+            //{
+            //    torqueReactionSpeed = Vector3d.zero;
+            //}
 
             Vector3d angularMomentum = Vector3d.zero;
             angularMomentum.x = (float)(MOI.x * vessel.angularVelocity.x);

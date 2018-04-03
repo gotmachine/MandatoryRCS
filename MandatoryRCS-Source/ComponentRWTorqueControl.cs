@@ -1,8 +1,10 @@
-﻿using System;
+﻿using MandatoryRCS.UI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using static MandatoryRCS.ComponentSASAttitude;
 
 namespace MandatoryRCS
 {
@@ -17,20 +19,32 @@ namespace MandatoryRCS
         public TorqueMode mode = TorqueMode.stock;
         private float torqueFactor = 0;
 
-        private bool lockedOnDirection;
+        //private bool lockedOnDirection;
 
         const float torqueIncreaseTime = 3.0f;
 
+        //private static Keyframe[] curveKeys = new Keyframe[]
+        //{
+        //    new Keyframe(0.000f, -1.000f),
+        //    new Keyframe(0.950f, 0.000f),
+        //    new Keyframe(0.960f, 0.025f),
+        //    new Keyframe(0.970f, 0.150f),
+        //    new Keyframe(0.985f, 0.850f),
+        //    new Keyframe(0.990f, 0.950f),
+        //    new Keyframe(0.995f, 0.990f),
+        //    new Keyframe(1.000f, 1.000f)
+        //};
+
         private static Keyframe[] curveKeys = new Keyframe[]
         {
-            new Keyframe(0.000f, -1.000f),
-            new Keyframe(0.950f, 0.000f),
-            new Keyframe(0.960f, 0.025f),
-            new Keyframe(0.970f, 0.150f),
-            new Keyframe(0.985f, 0.850f),
-            new Keyframe(0.990f, 0.950f),
-            new Keyframe(0.995f, 0.990f),
-            new Keyframe(1.000f, 1.000f)
+            new Keyframe(180.0f, 0.000f),
+            new Keyframe(4.50f, 0.000f),
+            new Keyframe(3.60f, 0.025f),
+            new Keyframe(2.70f, 0.150f),
+            new Keyframe(1.35f, 0.850f),
+            new Keyframe(0.90f, 0.950f),
+            new Keyframe(0.45f, 0.990f),
+            new Keyframe(0.00f, 1.000f)
         };
 
         private static FloatCurve torqueOutput = new FloatCurve(curveKeys);
@@ -52,35 +66,47 @@ namespace MandatoryRCS
             float requestedTorqueFactor = 0;
 
             // On pilot rotation requests or if the SAS is disabled, use nerfed torque output
-            if (!vesselModule.pilotIsIdle || !vesselModule.SASisEnabled)
+            if (!vesselModule.pilotIsIdle || !vesselModule.autopilotEnabled)
             {
                 mode = TorqueMode.nerfed;
+                vesselModule.rwLockedOnDirection = false;
             }
 
             // if the SAS is in a stability mode, use stock torque
-            else if (vesselModule.SASMode == SASUI.SASFunction.Hold
-                || vesselModule.SASMode == SASUI.SASFunction.HoldSmooth
-                || vesselModule.SASMode == SASUI.SASFunction.KillRot)
+            else if (vesselModule.autopilotMode == SASMode.Hold
+                || vesselModule.autopilotMode == SASMode.FlyByWire
+                || vesselModule.autopilotMode == SASMode.KillRot)
             {
                 mode = TorqueMode.stock;
+                vesselModule.rwLockedOnDirection = true;
             }
             else
             {
                 // SAS is in target mode, enable full torque if the target is near. 
                 // orientationDiff : 1.0 = toward target, 0.0 = target is at a 90° angle
-                float orientationDiff = Math.Max(Vector3.Dot(vesselModule.directionWanted.normalized, vessel.ReferenceTransform.up.normalized), 0);
-
-                //if (!lockedOnDirection && orientationDiff > 0.999f && vesselModule.angularVelocity.magnitude < 0.01)
-                if (!lockedOnDirection && orientationDiff > 0.999f && vesselModule.angularVelocity.magnitude < 0.1)
+                //float orientationDiff = Math.Max(Vector3.Dot(vesselModule.autopilotDirectionWanted.normalized, vessel.ReferenceTransform.up.normalized), 0);
+                float orientationDiff;
+                if (vesselModule.lockedRollMode)
                 {
-                    lockedOnDirection = true;
+                    orientationDiff = Quaternion.Angle(vesselModule.autopilotAttitudeWanted, vessel.ReferenceTransform.rotation * Quaternion.Euler(-90, 0, 0));
                 }
-                if (lockedOnDirection && orientationDiff < 0.90f)
+                else
                 {
-                    lockedOnDirection = false;
+                    orientationDiff = Vector3.Angle(vesselModule.autopilotDirectionWanted, vessel.ReferenceTransform.up);
                 }
 
-                if (lockedOnDirection)
+                // if (!vesselModule.rwLockedOnDirection && orientationDiff > 0.999f && vesselModule.angularVelocity.magnitude < 0.1)
+                if (!vesselModule.rwLockedOnDirection && orientationDiff < 0.4 && vesselModule.angularVelocity.magnitude < 0.05)
+                {
+                    vesselModule.rwLockedOnDirection = true;
+                }
+                //if (vesselModule.rwLockedOnDirection && orientationDiff < 0.90f)
+                if (vesselModule.rwLockedOnDirection && orientationDiff > 10.0)
+                {
+                    vesselModule.rwLockedOnDirection = false;
+                }
+
+                if (vesselModule.rwLockedOnDirection)
                 {
                     // Torque output is maximal when on target and decrease to zero quickly according to the floatcurve
                     requestedTorqueFactor = Math.Max(torqueOutput.Evaluate(orientationDiff), 0);

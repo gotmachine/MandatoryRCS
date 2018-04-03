@@ -34,13 +34,15 @@
     <Compile Include="ComponentSASAttitude.cs" />
     <Compile Include="ComponentBase.cs" />
     <Compile Include="ComponentSASAutopilot.cs" />
-    <Compile Include="NavBall.cs" />
+    <Compile Include="UI\NavBallUI.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Lib\MathExtensions.cs" />
     <Compile Include="Lib\Vector6.cs" />
     <Compile Include="ModuleTorqueController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ComponentPersistantRotation.cs" />
+    <Compile Include="UI\UILib.cs" />
+    <Compile Include="UI\UIObjects.cs" />
     <Compile Include="VesselModuleMandatoryRCS.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -80,7 +80,7 @@ namespace MandatoryRCS.Lib
                 );
         }
 
-        public static double Clamp(double val, double min, double max)
+        public static double Clamp(this double val, double min, double max)
         {
             if (val <= min)
                 return min;

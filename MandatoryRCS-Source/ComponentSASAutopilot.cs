@@ -6,9 +6,11 @@
  */
 
 using MandatoryRCS.Lib;
+using MandatoryRCS.UI;
 using System;
 using System.Linq;
 using UnityEngine;
+using static MandatoryRCS.ComponentSASAttitude;
 
 /* MECHJEB INTEGRATION GOALS :
  * - SAS Menu
@@ -22,11 +24,9 @@ using UnityEngine;
  * - SAS markers revamp :
  * 
 
-    TODO :
-    - Disable target hold if navball context is changed
-    - Disable target hold if target was modified
-    - Disable target hold if the maneuver node was modified or deleted
-    - Disable target hold if control part is intentionally changed
+    - MARKER : "Maximum relative angular velocity"
+    - MARKER : "Target the sun"
+    - MARKER : RCS auto mode
 
     - Implement the hold and holdsmooth SAS markers
     - Fix the targetcorrected marker (and maybe remove the retrograde corrected, more tests needed on this)
@@ -42,53 +42,6 @@ using UnityEngine;
 
     - Node executor -> dependency on betterburntime ?
     - Suicide burn executor -> dependency on betterburntime ?
-
-    old code :
-            private bool TargetHoldValidity()
-        {
-            // Disable target hold if navball context is changed
-            if (autopilotContextCurrent != autopilotContext)
-            {
-                return false;
-            }
-
-            // Disable target hold if target was modified
-            if ((autopilotMode == 7 || autopilotMode == 8 || autopilotContext == 2) && Vessel.targetObject != lastTarget)
-            {
-                return false;
-            }
-
-            // Disable target hold if the maneuver node was modified or deleted
-            if (autopilotMode == 9)
-            {
-                if (Vessel.patchedConicSolver.maneuverNodes.Count == 0)
-                {
-                    return false;
-                }
-                else if (Math.Abs(Vessel.patchedConicSolver.maneuverNodes[0].DeltaV.magnitude + Vessel.patchedConicSolver.maneuverNodes[0].UT) - Math.Abs(lastManeuverParameters) > 0.01f)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-    in a flight events class :
-            private void Start()
-        {
-            GameEvents.onSetSpeedMode.Add(onSetSpeedMode);
-            }
-            // Detect navball context (orbit/surface/target) changes
-        private void onSetSpeedMode(FlightGlobals.SpeedDisplayModes mode)
-        {
-            FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleRotation>().First().autopilotContextCurrent = (int)mode;
-        }
-                private void OnDestroy()
-        {
-            GameEvents.onSetSpeedMode.Remove(onSetSpeedMode);
-            }
-
-
  */
 
 
@@ -142,7 +95,7 @@ namespace MandatoryRCS
 
             // Find out the real shorter way to turn where we wan to.
             // Thanks to HoneyFox
-            Vector3d tgtLocalUp = vesselTransform.transform.rotation.Inverse() * vesselModule.attitudeWanted * Vector3d.forward;
+            Vector3d tgtLocalUp = vesselTransform.transform.rotation.Inverse() * vesselModule.autopilotAttitudeWanted * Vector3d.forward;
             Vector3d curLocalUp = Vector3d.up;
 
             double turnAngle = Math.Abs(Vector3d.Angle(curLocalUp, tgtLocalUp));
@@ -151,8 +104,8 @@ namespace MandatoryRCS
 
             // And the lowest roll
             // Thanks to Crzyrndm
-            Vector3 normVec = Vector3.Cross(vesselModule.attitudeWanted * Vector3.forward, vesselTransform.up);
-            Quaternion targetDeRotated = Quaternion.AngleAxis((float) turnAngle, normVec) * vesselModule.attitudeWanted;
+            Vector3 normVec = Vector3.Cross(vesselModule.autopilotAttitudeWanted * Vector3.forward, vesselTransform.up);
+            Quaternion targetDeRotated = Quaternion.AngleAxis((float) turnAngle, normVec) * vesselModule.autopilotAttitudeWanted;
             float rollError = Vector3.Angle(vesselTransform.right, targetDeRotated * Vector3.right) *
                               Math.Sign(Vector3.Dot(targetDeRotated * Vector3.right, vesselTransform.forward));
 
@@ -188,9 +141,10 @@ namespace MandatoryRCS
             setPIDParameters();
 
             // angular velocity limit:
-            var Wlimit = new Vector3d(Math.Sqrt(NormFactor.x * Math.PI * kWlimit),
-                Math.Sqrt(NormFactor.y * Math.PI * kWlimit),
-                Math.Sqrt(NormFactor.z * Math.PI * kWlimit));
+            // vesselModule.velocityLimiter * 0.01 = kWlimit in MechJeb
+            var Wlimit = new Vector3d(Math.Sqrt(NormFactor.x * Math.PI * vesselModule.velocityLimiter * 0.01),
+                Math.Sqrt(NormFactor.y * Math.PI * vesselModule.velocityLimiter * 0.01),
+                Math.Sqrt(NormFactor.z * Math.PI * vesselModule.velocityLimiter * 0.01));
 
             pidAction = pid.Compute(err, omega, Wlimit);
 
@@ -357,37 +311,37 @@ namespace MandatoryRCS
 
                 VesselModuleMandatoryRCS vm = data.host.vesselModules.OfType<VesselModuleMandatoryRCS>().First();
 
-                if (vm.SASModeLock && 
-                    (vm.SASMode == SASUI.SASFunction.Prograde ||
-                    vm.SASMode == SASUI.SASFunction.Retrograde ||
-                    vm.SASMode == SASUI.SASFunction.Normal ||
-                    vm.SASMode == SASUI.SASFunction.AntiNormal ||
-                    vm.SASMode == SASUI.SASFunction.RadialIn ||
-                    vm.SASMode == SASUI.SASFunction.RadialOut))
+                if (vm.autopilotPersistentModeLock && 
+                    (vm.autopilotMode == SASMode.Prograde ||
+                    vm.autopilotMode == SASMode.Retrograde ||
+                    vm.autopilotMode == SASMode.Normal ||
+                    vm.autopilotMode == SASMode.AntiNormal ||
+                    vm.autopilotMode == SASMode.RadialIn ||
+                    vm.autopilotMode == SASMode.RadialOut))
                 {
-                    vm.SASModeLock = false;
-                    vm.SASMode = SASUI.SASFunction.KillRot;
+                    vm.autopilotPersistentModeLock = false;
+                    vm.autopilotMode = SASMode.KillRot;
                 }
             }
             else
             {
                 bool SASModeLock = false;
-                SASUI.SASFunction SASMode = SASUI.SASFunction.KillRot;
+                SASMode sasMode = SASMode.KillRot;
                 int SASModeInt = 3;
                 if (!data.host.protoVessel.vesselModules.GetNode("VesselModuleMandatoryRCS").TryGetValue("SASModeLock", ref SASModeLock))
                 { return; }
                 if (!data.host.protoVessel.vesselModules.GetNode("VesselModuleMandatoryRCS").TryGetValue("SASMode", ref SASModeInt))
                 { return; }
 
-                SASMode = (SASUI.SASFunction)SASModeInt;
+                sasMode = (SASMode)SASModeInt;
 
                 if (SASModeLock &&
-                    (SASMode == SASUI.SASFunction.Prograde ||
-                    SASMode == SASUI.SASFunction.Retrograde ||
-                    SASMode == SASUI.SASFunction.Normal ||
-                    SASMode == SASUI.SASFunction.AntiNormal ||
-                    SASMode == SASUI.SASFunction.RadialIn ||
-                    SASMode == SASUI.SASFunction.RadialOut))
+                    (sasMode == SASMode.Prograde ||
+                    sasMode == SASMode.Retrograde ||
+                    sasMode == SASMode.Normal ||
+                    sasMode == SASMode.AntiNormal ||
+                    sasMode == SASMode.RadialIn ||
+                    sasMode == SASMode.RadialOut))
                 {
                     data.host.protoVessel.vesselModules.GetNode("VesselModuleMandatoryRCS").SetValue("SASModeLock", false);
                     data.host.protoVessel.vesselModules.GetNode("VesselModuleMandatoryRCS").SetValue("SASMode", 0);

@@ -18,15 +18,15 @@ namespace MandatoryRCS
             if (vesselModule.currentState == VesselModuleMandatoryRCS.VesselState.Packed)
             {
                 // If the SAS is locked, we keep the vessel rotated toward the autopilot selection
-                if (vesselModule.SASModeLock)
+                if (vesselModule.autopilotPersistentModeLock)
                 {
                     if (vesselModule.lockedRollMode)
                     {
-                        SetVesselAttitude(vesselModule.attitudeWanted * Quaternion.Euler(90, 0, 0));
+                        SetVesselAttitude(vesselModule.autopilotAttitudeWanted * Quaternion.Euler(90, 0, 0));
                     }
                     else
                     {
-                        SetVesselAttitude(vesselModule.directionWanted);
+                        SetVesselAttitude(vesselModule.autopilotDirectionWanted);
                     }
                 }
                 // else rotate the vessel according to its angular velocity
@@ -41,15 +41,15 @@ namespace MandatoryRCS
             else if (vesselModule.isInPhysicsFirstFrame)
             {
                 // Restore the vessel attitude according to the autopilot selection
-                if (vesselModule.SASModeLock)
+                if (vesselModule.autopilotPersistentModeLock)
                 {
                     if (vesselModule.lockedRollMode)
                     {
-                        SetVesselAttitude(vesselModule.attitudeWanted * Quaternion.Euler(90, 0, 0));
+                        SetVesselAttitude(vesselModule.autopilotAttitudeWanted * Quaternion.Euler(90, 0, 0));
                     }
                     else
                     {
-                        SetVesselAttitude(vesselModule.directionWanted);
+                        SetVesselAttitude(vesselModule.autopilotDirectionWanted);
                     }
                 }
 
