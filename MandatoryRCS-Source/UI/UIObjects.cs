@@ -1,4 +1,5 @@
-﻿using MandatoryRCS.UI;
+﻿using KSP.UI.Screens.Flight;
+using MandatoryRCS.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -226,4 +227,116 @@ namespace MandatoryRCS
 
     }
 
+
+    public class NavBallvector
+    {
+        private GameObject vectorObject;
+        private GameObject indicationArrow;
+        private NavBall navBall;
+        private bool visible;
+
+        public NavBallvector(string name, GameObject navBallVectorsPivot, NavBall navBall, Sprite sprite, Color arrowColor, bool hasArrow)
+        {
+            this.navBall = navBall;
+
+            vectorObject = new GameObject(name);
+            vectorObject.transform.SetParent(navBallVectorsPivot.transform);
+            vectorObject.layer = LayerMask.NameToLayer("UI");
+
+            Image image = vectorObject.AddComponent<Image>();
+            image.sprite = sprite;
+            image.type = Image.Type.Simple;
+
+            ((RectTransform)vectorObject.transform).sizeDelta = new Vector2(34, 34);
+
+            if (hasArrow)
+            {
+                indicationArrow = GameObject.Instantiate(navBallVectorsPivot.GetChild("BurnVectorArrow"));
+                indicationArrow.transform.SetParent(navBallVectorsPivot.transform);
+                indicationArrow.GetComponent<MeshRenderer>().materials[0].SetColor("_TintColor", arrowColor);
+            }   
+        }
+
+        public bool IsVisible()
+        {
+            return visible;
+        }
+
+        public void SetVisible(bool visible)
+        {
+            this.visible = visible;
+
+            if (!visible)
+            {
+                vectorObject.SetActive(false);
+                if (indicationArrow != null)
+                {
+                    indicationArrow.SetActive(false);
+                }
+            }
+        }
+
+        public void Update(Vector3 direction)
+        {
+            if (visible)
+            {
+                vectorObject.transform.localPosition = navBall.attitudeGymbal * (direction.normalized * navBall.VectorUnitScale);
+
+                if (vectorObject.transform.localPosition.z >= navBall.VectorUnitCutoff)
+                {
+                    if (!vectorObject.activeSelf)
+                    {
+                        vectorObject.SetActive(true);
+                    }
+                    if (indicationArrow != null && indicationArrow.activeSelf)
+                    {
+                        indicationArrow.SetActive(false);
+                    }
+                    return;
+                }
+                else
+                {
+                    if (vectorObject.activeSelf)
+                    {
+                        vectorObject.SetActive(false);
+                    }
+                    if (indicationArrow != null && !indicationArrow.activeSelf)
+                    {
+                        indicationArrow.SetActive(true);
+                    }
+                }
+
+                if (indicationArrow != null)
+                {
+                    Vector3 localPosition = vectorObject.transform.localPosition;
+                    Vector3 vector = localPosition - Vector3.Dot(localPosition, Vector3.forward) * Vector3.forward;
+                    vector.Normalize();
+                    vector *= navBall.VectorUnitScale * 0.6f;
+                    indicationArrow.transform.localPosition = vector;
+                    float num = 57.29578f * Mathf.Acos(vector.x / Mathf.Sqrt(vector.x * vector.x + vector.y * vector.y));
+                    if (vector.y < 0f)
+                    {
+                        num += 2f * (180f - num);
+                    }
+                    if (float.IsNaN(num))
+                    {
+                        num = 0f;
+                    }
+                    Quaternion localRotation = Quaternion.Euler(num + 90f, 270f, 90f);
+                    indicationArrow.transform.localRotation = localRotation;
+                }
+            }
+            else
+            {
+                if (vectorObject.activeSelf)
+                {
+                    vectorObject.SetActive(false);
+                }
+                if (indicationArrow != null && indicationArrow.activeSelf)
+                {
+                    indicationArrow.SetActive(false);
+                }
+            }
+        }
+    }
 }

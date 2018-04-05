@@ -136,11 +136,14 @@ namespace MandatoryRCS.UI
         private SASMarkerButton velLimiter;
         #endregion
 
+        private NavBallvector autopilotDirection;
+
         #region KSP UI GameObjects
         private NavBall navBall; // KSP class
         private GameObject navballFrame; // Top-level object for navball
         private GameObject collapseGroup; // Child of navballFrame, everything else is a child of this
         private GameObject autoPilotModes; // Top-level object for stock SAS marker toggles, we are disabling this
+        private GameObject navBallVectorsPivot; // Parent transform for the navball markers
         private GameObject SAS; // SAS toggle
         private GameObject RCS; // RCS toggle
                                 //private GameObject stability;
@@ -217,8 +220,20 @@ namespace MandatoryRCS.UI
             if (vesselModule.autopilotEnabled != guiEnabled)
             {
                 guiEnabled = vesselModule.autopilotEnabled;
-                SetMode(SASMode.KillRot, true);
+                SetMode(SASMode.KillRot, true, true);
                 mainButtonPanel.SetActive(guiEnabled);
+            }
+
+            if (vesselModule.autopilotMode == SASMode.FlyByWire || vesselModule.autopilotMode == SASMode.Hold)
+            {
+                if (!autopilotDirection.IsVisible())
+                    autopilotDirection.SetVisible(true);
+
+                autopilotDirection.Update(vesselModule.autopilotDirectionWanted);
+            }
+            else if (autopilotDirection.IsVisible()) 
+            {
+                autopilotDirection.SetVisible(false);
             }
 
             if (!guiEnabled) return;
@@ -258,6 +273,7 @@ namespace MandatoryRCS.UI
             navballFrame = navBall.gameObject.transform.parent.parent.gameObject;
             collapseGroup = navballFrame.gameObject.GetChild("IVAEVACollapseGroup");
             autoPilotModes = navballFrame.gameObject.GetChild("AutopilotModes");
+            navBallVectorsPivot = navballFrame.gameObject.GetChild("NavBallVectorsPivot");
             SAS = navballFrame.gameObject.GetChild("SAS");
             RCS = navballFrame.gameObject.GetChild("RCS");
 
@@ -306,6 +322,8 @@ namespace MandatoryRCS.UI
             UpdateVelocityMarkers(FlightGlobals.GetDisplaySpeed() > 0.1, true);
 
             guiEnabled = true;
+
+            autopilotDirection = new NavBallvector("autopilotDirection", navBallVectorsPivot, navBall, spriteFlyByWire, Color.grey, true);
 
             return true;
         }
@@ -446,14 +464,31 @@ namespace MandatoryRCS.UI
             {
                 SetTargetSun(enabled);
             }
-            else if (enabled)
+            else
             {
                 SASMode newMode;
-                if (toggleToMode.TryGetValue(toggle, out newMode))
+
+                if (!toggleToMode.TryGetValue(toggle, out newMode)) return;
+
+                if (newMode != currentMode)
                 {
                     SetMode(newMode);
-                };
+                }
+                else
+                {
+                    toggle.SetToggleState(true, false);
+
+                    if (newMode == SASMode.FlyByWire)
+                    {
+                        vesselModule.flyByWire = false;
+                    }
+                }
             }
+        }
+
+        private void ResetFlyByWire()
+        {
+            throw new NotImplementedException();
         }
 
         public void ButtonClick(SASMarkerButton button)
@@ -639,4 +674,7 @@ namespace MandatoryRCS.UI
         }
         #endregion
     }
+
+
+
 }

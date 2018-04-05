@@ -31,6 +31,12 @@ namespace MandatoryRCS
             AntiParallel
         }
 
+        private void KeepCurrentAttitude()
+        {
+            vesselModule.autopilotDirectionWanted = vessel.GetTransform().up;
+            vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, -vessel.GetTransform().forward);
+        }
+
         private double maneuverNodeHash;
 
         public bool ModeInTargetContextOnly(SASMode mode)
@@ -128,7 +134,8 @@ namespace MandatoryRCS
             }
             // Check if maneuver node has changed
             // TODO: this doesn't work if maneuver is changed in the negative range, maybe remobe Math.Abs ?
-            if (vessel.patchedConicSolver.maneuverNodes.Count > 0 
+            if (vessel.patchedConicSolver != null
+                && vessel.patchedConicSolver.maneuverNodes.Count > 0 
                 && vesselModule.hasManeuverNode
                 && (Math.Abs(vessel.patchedConicSolver.maneuverNodes[0].DeltaV.magnitude + vessel.patchedConicSolver.maneuverNodes[0].UT) - Math.Abs(maneuverNodeHash) > 0.05))
             {
@@ -150,7 +157,7 @@ namespace MandatoryRCS
             // Save current target
             vesselModule.currentTarget = vessel.targetObject;
             // Save maneuver node
-            vesselModule.hasManeuverNode = vessel.patchedConicSolver.maneuverNodes.Count > 0;
+            vesselModule.hasManeuverNode = vessel.patchedConicSolver != null && vessel.patchedConicSolver.maneuverNodes.Count > 0;
             if (vesselModule.hasManeuverNode)
             {
                 maneuverNodeHash = vessel.patchedConicSolver.maneuverNodes[0].DeltaV.magnitude + vessel.patchedConicSolver.maneuverNodes[0].UT;
@@ -362,8 +369,7 @@ namespace MandatoryRCS
                     if (!vesselModule.pilotIsIdle)
                     {
                         vesselModule.flyByWire = false;
-                        vesselModule.autopilotDirectionWanted = vessel.GetTransform().up;
-                        vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, -vessel.GetTransform().forward);
+                        KeepCurrentAttitude();
                     }
                     else if (!vesselModule.flyByWire)
                     {
@@ -378,25 +384,34 @@ namespace MandatoryRCS
                         }
                         else
                         {
-                            vesselModule.autopilotDirectionWanted = vessel.GetTransform().up;
-                            vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, -vessel.GetTransform().forward);
+                            KeepCurrentAttitude();
                         }
                     }
                     break;
                 case SASMode.FlyByWire:
-                    // TODO: fix this, add navball marker
+                    // Abort if flightCtrlstate is null
+                    if (vesselModule.flightCtrlState == null)
+                    {
+                        vesselModule.flyByWire = false;
+                        KeepCurrentAttitude();
+                        break;
+                    }
+                    // If just activated, we need to register the current attitude
                     if (!vesselModule.flyByWire)
                     {
                         vesselModule.flyByWire = true;
-                        vesselModule.autopilotDirectionWanted = vessel.GetTransform().up;
-                        vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, -vessel.GetTransform().forward);
+                        KeepCurrentAttitude();
                     }
-                    FlightCtrlState s = vesselModule.flightCtrlState;
 
+                    // Get pitch and yaw input
+                    FlightCtrlState s = vesselModule.flightCtrlState;
                     float pitchInput = vesselModule.flightCtrlState.pitch;
                     float yawInput = vesselModule.flightCtrlState.yaw;
-                    vesselModule.autopilotDirectionWanted = Quaternion.Euler(pitchInput, yawInput, 0) * vesselModule.autopilotDirectionWanted;
+                    // Update direction with pitch and yaw input
+        
+                    vesselModule.autopilotDirectionWanted += vessel.ReferenceTransform.rotation * new Vector3(yawInput * TimeWarp.fixedDeltaTime * 0.2f, 0, -pitchInput * TimeWarp.fixedDeltaTime * 0.2f);
                     vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, -vessel.GetTransform().forward);
+                    // Reset pitch and yaw input
                     vesselModule.flightCtrlState.pitch = 0;
                     vesselModule.flightCtrlState.yaw = 0;
                     break;
@@ -413,6 +428,10 @@ namespace MandatoryRCS
                     }
                     break;
             }
+
+            // Ensure we use a normalized vector
+            vesselModule.autopilotDirectionWanted = vesselModule.autopilotDirectionWanted.normalized;
+
 
             // Checking if the timewarping / persistent hold mode should be enabled
             if (vesselModule.currentState == VesselState.InPhysics)

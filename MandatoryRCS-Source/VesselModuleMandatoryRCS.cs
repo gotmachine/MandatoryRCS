@@ -163,6 +163,8 @@ namespace MandatoryRCS
             if (currentState == VesselState.InPhysics)
             {
                 // Is the player currently steering this vessel ?
+                // TODO : if flybywire mode is enabled, we have oveeriden the flightcontrolstate piutch and yaw value in ComponentSASAttitude
+                // We need to set pilotIsIdle in SASattitude probably
                 pilotIsIdle = s != null && s.isIdle;
                 // Now that we know what the pilot is doing, adjust the reaction wheels torque
                 torqueControl.ComponentUpdate();
@@ -223,7 +225,7 @@ namespace MandatoryRCS
             if (rcsAutoMode)
             {
                 bool enabled;
-                enabled = !rwLockedOnDirection && vessel.staticPressurekPa < 20;
+                enabled = !rwLockedOnDirection && vessel.staticPressurekPa < 10;
                 vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, enabled);
             }
         }

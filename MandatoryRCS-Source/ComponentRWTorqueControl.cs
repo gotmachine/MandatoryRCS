@@ -72,10 +72,8 @@ namespace MandatoryRCS
                 vesselModule.rwLockedOnDirection = false;
             }
 
-            // if the SAS is in a stability mode, use stock torque
-            else if (vesselModule.autopilotMode == SASMode.Hold
-                || vesselModule.autopilotMode == SASMode.FlyByWire
-                || vesselModule.autopilotMode == SASMode.KillRot)
+            // if the SAS is in KillRot mode, use stock torque
+            else if (vesselModule.autopilotMode == SASMode.KillRot)
             {
                 mode = TorqueMode.stock;
                 vesselModule.rwLockedOnDirection = true;
