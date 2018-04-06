@@ -1,4 +1,8 @@
-﻿using KSP.UI.Screens.Flight;
+﻿/* 
+ * This file and all code it contains is released in the public domain
+ */
+
+using KSP.UI.Screens.Flight;
 using MandatoryRCS.UI;
 using System;
 using System.Collections.Generic;
@@ -12,6 +16,70 @@ namespace MandatoryRCS
     public class SASMarker
     {
         public string name;
+    }
+
+    public class SASMarkerSimple : SASMarker
+    {
+        //public Sprite spriteOn;
+        //public Sprite spriteOff;
+        //public Sprite spriteSymbol;
+
+        private GameObject buttonObject;
+        private GameObject button;
+        private Button buttonComponent;
+        private KSP.UI.TooltipTypes.TooltipController_Text tooltip;
+        private Image symbolImage;
+
+        private NavBallHandler handler;
+
+        public SASMarkerSimple(NavBallHandler handler, string name, Vector2 position, GameObject parent, Sprite spriteSymbol)
+        {
+            this.handler = handler;
+            this.name = name;
+
+            buttonObject = new GameObject(name);
+            buttonObject.transform.SetParent(parent.transform);
+            buttonObject.layer = LayerMask.NameToLayer("UI");
+
+            button = new GameObject("Button");
+            button.transform.SetParent(buttonObject.transform);
+            button.layer = LayerMask.NameToLayer("UI");
+
+            symbolImage = button.AddComponent<Image>();
+            symbolImage.sprite = spriteSymbol;
+            symbolImage.type = Image.Type.Simple;
+
+            buttonComponent = button.AddComponent<Button>();
+            buttonComponent.transition = Selectable.Transition.None;
+
+            buttonComponent.onClick.AddListener(OnClick);
+
+            buttonObject.transform.localPosition = position;
+            //buttonObject.transform.localScale = new Vector3(0.5f, 0.5f, 1.0f);
+            button.GetComponent<RectTransform>().sizeDelta = new Vector2(24, 24);
+
+            tooltip = button.AddComponent<KSP.UI.TooltipTypes.TooltipController_Text>();
+            tooltip.prefab = UILib.tooltipPrefab;
+            tooltip.SetText(name);
+        }
+
+        private void OnClick()
+        {
+            //GameObject ButtonClicked = EventSystem.current.currentSelectedGameObject;
+            handler.ButtonClick(this);
+        }
+
+        public void SetActive(bool active) { button.SetActive(active); }
+        public bool GetActive() { return button.activeInHierarchy; }
+
+        public void SetVisible(bool visible) { buttonObject.SetActive(visible); }
+        public bool GetVisible() { return buttonObject.activeInHierarchy; }
+
+        public void SetSprite(Sprite symbol)
+        {
+            symbolImage.sprite = symbol;
+        }
+
     }
 
     public class SASMarkerButton : SASMarker
@@ -112,6 +180,7 @@ namespace MandatoryRCS
         private KSP.UI.TooltipTypes.TooltipController_Text tooltip;
         private Image symbolImage;
         private Image onImage;
+        private Image offImage;
         private Sprite spriteOnLocked;
         private Sprite spriteOnNotLocked;
 
@@ -147,7 +216,7 @@ namespace MandatoryRCS
             symbolImage.raycastTarget = false;
             symbolImage.type = Image.Type.Simple;
 
-            Image offImage = overlayOff.AddComponent<Image>();
+            offImage = overlayOff.AddComponent<Image>();
             offImage.sprite = spriteOff;
             offImage.type = Image.Type.Simple;
 
@@ -185,6 +254,7 @@ namespace MandatoryRCS
         {
             //GameObject ButtonClicked = EventSystem.current.currentSelectedGameObject;
             handler.ToggleClick(this, enabled);
+            offImage.enabled = !enabled;
         }
 
         public void UpdateLockState(bool locked)
@@ -212,6 +282,7 @@ namespace MandatoryRCS
         {
             if (!fireEvent) toggleComponent.onValueChanged.RemoveListener(OnToggleState);
             toggleComponent.isOn = enabled;
+            offImage.enabled = !enabled;
             if (!fireEvent) toggleComponent.onValueChanged.AddListener(OnToggleState);
         }
 
@@ -235,10 +306,9 @@ namespace MandatoryRCS
         private NavBall navBall;
         private bool visible;
 
-        public NavBallvector(string name, GameObject navBallVectorsPivot, NavBall navBall, Sprite sprite, Color arrowColor, bool hasArrow)
+        public NavBallvector(string name, GameObject navBallVectorsPivot, NavBall navBall, Sprite sprite, Color32 color, bool hasArrow)
         {
             this.navBall = navBall;
-
             vectorObject = new GameObject(name);
             vectorObject.transform.SetParent(navBallVectorsPivot.transform);
             vectorObject.layer = LayerMask.NameToLayer("UI");
@@ -246,15 +316,18 @@ namespace MandatoryRCS
             Image image = vectorObject.AddComponent<Image>();
             image.sprite = sprite;
             image.type = Image.Type.Simple;
+            image.color = color;
 
-            ((RectTransform)vectorObject.transform).sizeDelta = new Vector2(34, 34);
+            ((RectTransform)vectorObject.transform).sizeDelta = new Vector2(40, 40);
 
             if (hasArrow)
             {
                 indicationArrow = GameObject.Instantiate(navBallVectorsPivot.GetChild("BurnVectorArrow"));
                 indicationArrow.transform.SetParent(navBallVectorsPivot.transform);
-                indicationArrow.GetComponent<MeshRenderer>().materials[0].SetColor("_TintColor", arrowColor);
-            }   
+                indicationArrow.GetComponent<MeshRenderer>().materials[0].SetColor("_TintColor", color);
+            }
+
+            visible = true;
         }
 
         public bool IsVisible()

@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿/* 
+ * This file and all code it contains is released in the public domain
+ */
+
 using System.IO;
-using System.Linq;
-using System.Text;
 using UnityEngine;
 
 namespace MandatoryRCS.UI

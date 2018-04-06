@@ -1,8 +1,8 @@
-﻿using MandatoryRCS.UI;
+﻿/* 
+ * This file and all code it contains is released in the public domain
+ */
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEngine;
 using static FlightGlobals;
 using static MandatoryRCS.VesselModuleMandatoryRCS;
@@ -166,109 +166,62 @@ namespace MandatoryRCS
             return revertToKillRot;
         }
 
-        public override void ComponentUpdate()
+        private Vector3d GetDirectionVector()
         {
-            // Isn't called for unloaded vessels
-            if (vesselModule.currentState == VesselState.Unloaded) { return; }
-
-            // Update SAS mode, context and target then reset to KillRot if necessary
-            if (UpdateTargetAndModeAndContext())
-            {
-                vesselModule.autopilotMode = SASMode.KillRot;
-            }
-
-
-            // Calculate requested attitude
-
-
             // Get direction vector
-            // TODO : Use less code for this
             switch (vesselModule.autopilotMode)
             {
                 case SASMode.Prograde:
                 case SASMode.Retrograde:
-                    if (vesselModule.autopilotContext == FlightGlobals.SpeedDisplayModes.Orbit) // Orbit prograde
-                    { vesselModule.autopilotDirectionWanted = vessel.obt_velocity; }
-                    else if (vesselModule.autopilotContext == FlightGlobals.SpeedDisplayModes.Surface) // Surface prograde
-                    { vesselModule.autopilotDirectionWanted = vessel.srf_velocity; }
-                    else if (vesselModule.autopilotContext == FlightGlobals.SpeedDisplayModes.Target) // Target prograde
+                    if (vesselModule.autopilotContext == SpeedDisplayModes.Orbit) // Orbit prograde
+                        return vesselModule.autopilotMode == SASMode.Prograde ? vessel.obt_velocity.normalized : (-vessel.obt_velocity).normalized;
+                    else if (vesselModule.autopilotContext == SpeedDisplayModes.Surface) // Surface prograde
+                        return vesselModule.autopilotMode == SASMode.Prograde ? vessel.srf_velocity.normalized : (-vessel.srf_velocity).normalized;
+                    else // Target prograde
                     {
                         if (vessel.targetObject != null)
-                        { vesselModule.autopilotDirectionWanted = -(vessel.targetObject.GetObtVelocity() - vessel.obt_velocity); }
-                    }
-                    if (vesselModule.autopilotMode == SASMode.Retrograde) // Invert vector for retrograde
-                    {
-                        vesselModule.autopilotDirectionWanted = -vesselModule.autopilotDirectionWanted;
+                        {
+                            Vector3d velocity = vessel.obt_velocity - vessel.targetObject.GetObtVelocity();
+                            return vesselModule.autopilotMode == SASMode.Prograde ? velocity.normalized : (-velocity).normalized;
+                        }
                     }
                     break;
                 case SASMode.Normal:
                 case SASMode.AntiNormal:
-                case SASMode.RadialOut:
-                case SASMode.RadialIn:
-                    // Get body up vector
-                    Vector3d planetUp = (vessel.rootPart.transform.position - vessel.mainBody.position).normalized;
-                    // Get normal vector
-                    Vector3d normal = new Vector3();
-                    if (vesselModule.autopilotContext == FlightGlobals.SpeedDisplayModes.Orbit) // Orbit
-                    { normal = Vector3.Cross(vessel.obt_velocity, planetUp).normalized; }
-                    else // Surface/Target (seems to be the same for normal/radial)
-                    { normal = Vector3.Cross(vessel.srf_velocity, planetUp).normalized; }
-
-                    // Return normal/antinormal or calculate radial
-                    if (vesselModule.autopilotMode == SASMode.Normal) // Normal
-                    { vesselModule.autopilotDirectionWanted = normal; }
-                    else if (vesselModule.autopilotMode == SASMode.AntiNormal) // AntiNormal
-                    { vesselModule.autopilotDirectionWanted = -normal; }
+                    Vector3d normal;
+                    if (vesselModule.autopilotContext == SpeedDisplayModes.Surface)
+                        normal = Vector3.Cross(vessel.srf_velocity, vessel.upAxis); 
                     else
-                    {
-                        // Get RadialIn vector
-                        Vector3d radial = new Vector3();
-                        if (vesselModule.autopilotContext == FlightGlobals.SpeedDisplayModes.Orbit) // Orbit
-                        { radial = Vector3.Cross(vessel.obt_velocity, normal).normalized; }
-                        else // Surface/Target (seems to be the same for normal/radial)
-                        { radial = Vector3.Cross(vessel.srf_velocity, normal).normalized; }
-
-                        // Return radial vector
-                        if (vesselModule.autopilotMode == SASMode.RadialIn) // Radial In
-                        { vesselModule.autopilotDirectionWanted = radial; }
-                        else if (vesselModule.autopilotMode == SASMode.RadialOut) // Radial Out
-                        { vesselModule.autopilotDirectionWanted = -radial; }
-                    }
-                    break;
+                        normal = Vector3.Cross(vessel.obt_velocity, vessel.upAxis); 
+                    return vesselModule.autopilotMode == SASMode.Normal ? normal.normalized : (-normal).normalized;
+                case SASMode.RadialOut:
+                    return vessel.upAxis.normalized;
+                case SASMode.RadialIn:
+                    return (-vessel.upAxis).normalized;
                 case SASMode.Maneuver:
-                    if (vessel.patchedConicSolver.maneuverNodes.Count < 1) { break; }
-                    vesselModule.autopilotDirectionWanted = vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(vessel.orbit);
-                    break;
+                    if (vessel.patchedConicSolver.maneuverNodes.Count < 1) break;
+                    return vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(vessel.orbit).normalized;
                 case SASMode.Target:
-                    if (vessel.targetObject == null) { break; }
-                    vesselModule.autopilotDirectionWanted = vessel.targetObject.GetTransform().position - vessel.transform.position;
-                    break;
+                    if (vessel.targetObject == null) break;
+                    return (vessel.targetObject.GetTransform().position - vessel.transform.position).normalized;
                 case SASMode.AntiTarget:
-                    if (vessel.targetObject == null) { break; }
-                    vesselModule.autopilotDirectionWanted = -(vessel.targetObject.GetTransform().position - vessel.transform.position);
-                    break;
+                    if (vessel.targetObject == null) break;
+                    return (vessel.transform.position - vessel.targetObject.GetTransform().position).normalized;
                 case SASMode.Parallel:
                 case SASMode.AntiParallel:
-                    if (vessel.targetObject == null) { break; }
-                    // vessel.targetObject.GetFwdVector() -> not consistent
-                    if (vessel.targetObject is ModuleDockingNode)
-                    {
-                        vesselModule.autopilotDirectionWanted = vessel.targetObject.GetTransform().forward;
-                    }
-                    else
-                    {
-                        vesselModule.autopilotDirectionWanted = vessel.targetObject.GetTransform().up;
-                    }
-                    if (vesselModule.autopilotMode == SASMode.AntiParallel)
-                    {
-                        vesselModule.autopilotDirectionWanted *= -1;
-                    }
-                    break;
+                    if (vessel.targetObject == null) break;
+                    Vector3d direction;
 
+                    if (vessel.targetObject is ModuleDockingNode)
+                        direction = vessel.targetObject.GetTransform().forward.normalized;
+                    else
+                        direction = vessel.targetObject.GetTransform().up.normalized;
+
+                    return vesselModule.autopilotMode == SASMode.Parallel ? direction.normalized : (-direction).normalized;
                 case SASMode.ProgradeCorrected:
                 case SASMode.RetrogradeCorrected:
                     //TODO : this doesn't work well
-                    if (vessel.targetObject == null) { break; }
+                    if (vessel.targetObject == null) return vessel.ReferenceTransform.up.normalized;
                     Vector3 targetDirInv = vessel.transform.position - vessel.targetObject.GetTransform().position;
                     Vector3 targetRelVel = vessel.GetObtVelocity() - vessel.targetObject.GetObtVelocity();
 
@@ -294,44 +247,27 @@ namespace MandatoryRCS
                     }
                     break;
 
-                    //Vector3 projection = targetPos.normalized + Vector3.ProjectOnPlane(targetvel, targetPos);
-                    //float projectionMagn = projection.magnitude;
-                    //projection = projectionMagn > 1.0f ? projection / projectionMagn * 1.0f : projection;
-                    //direction = vessel.ReferenceTransform.InverseTransformDirection(projection.normalized);
             }
 
-            Vector3.Normalize(vesselModule.autopilotDirectionWanted);
+            // In other cases, return the direction from the previous step
+            return vesselModule.autopilotDirectionWanted;
+        }
 
-            // Define the roll reference
+        private Vector3d UpdateRollRef()
+        {
             /*
             Roll handling is problematic. The conflicting facts are :
             (1) We want the roll attitude to make sense from a player standpoint when flying the vessel
             (2) The reference should result in a smooth and continous change of the roll attitude, no sudden inversions
             (2) A fixed reference (independant from the vessel attitude) WILL have a "dead zone" causing a sudden inversion of the roll attitude
 
-            In most cases, the player will want the roll reference to be relative to the "horizon line" (the blue/brown separation on the navball)
-            The roll reference in this case is the "UP/DOWN" also called "RADIAL/ANTIRADIAL" direction.
-            The issue is that as the vessel is pointing closer toward the radial vector, this reference become 
-            unstable (bad for gameplay) and then undefined when the vessel is aligned toward radial/antiradial (bad for the code).
-            In a lesser way, this problem also appear when the roll reference is the target.
-            
-            How we can handle this "roll reference is undefined" issue :
-            - Disable roll lock when we enter the unstable zone
-                - Easy solution to the issue
-                - This mean that roll lock can't be used in some situations
-            - Don't disable roll lock but don't apply the orientation in the unstable zone
-                - This doesn't solve the "sudden 180° turn while in timewarp" issue
-                    > The timewarp issue could maybe be lessened by lerping between the start and end points of the unstable zone
-                    > This still will be stromboscopic at high timewarp rates
-            - Enable the player to switch between different roll references
-                - Possible roll references : mainbody up, mainbody north, target up, sun.
-                - Notify the player if he has selected a potentially undefined orientation/rollref combination
-                - Extra complexity, not very usefull in most situations
-                - The issue can still appear and be handled somehow
-
-            Possible references :
-            Up/radial = vessel.upAxis
-            North = Vector3d.Exclude(vessel.upAxis, vessel.mainBody.transform.up);
+            The current solution :
+            - Disable roll lock when we enter the dead zone
+            - Use predefined roll references for the different modes :
+                - Radial/Antiradial use the main body north vector
+                - Other body-relative modes use the up/radial vector
+                - Target/antitarget use the target up/forward vector
+                - Parallel/antiparallel use a "right" vector relative to the vessel forward vector
             */
 
             Vector3d rollRef = Vector3d.zero;
@@ -340,9 +276,20 @@ namespace MandatoryRCS
                 || vesselModule.autopilotMode == SASMode.Target
                 || vesselModule.autopilotMode == SASMode.AntiTarget)
             {
-                if (vessel.targetObject is ModuleDockingNode || vessel.targetObject is CelestialBody)
+                if (vessel.targetObject is ModuleDockingNode)
                 {
                     rollRef = vessel.targetObject.GetTransform().up;
+                }
+                else if (vessel.targetObject is CelestialBody)
+                {
+                    if (vesselModule.autopilotMode == SASMode.Parallel || vesselModule.autopilotMode == SASMode.AntiParallel)
+                    {
+                        rollRef = Vector3.Cross(vessel.targetObject.GetTransform().position - vessel.ReferenceTransform.position, vessel.targetObject.GetTransform().up);
+                    }
+                    else
+                    {
+                        rollRef = vessel.targetObject.GetTransform().up;
+                    }
                 }
                 else
                 {
@@ -351,18 +298,36 @@ namespace MandatoryRCS
             }
             else
             {
+                // If SAS is set radial (Up), the roll ref is the mainbody north
+                if (vesselModule.autopilotMode == SASMode.RadialIn || vesselModule.autopilotMode == SASMode.RadialOut)
+                {
+                    rollRef = Vector3d.Exclude(vessel.upAxis, vessel.mainBody.transform.up);
+                }
+                // Else the rollref is the radial/up vector
+                else
+                {
                     rollRef = vessel.upAxis;
+                }
             }
+
             // Is the rollRef in the unstability zone ?
-            // TODO : deactivate the RollLock marker when we are in the unstability zone
             double angleToRef = Vector3d.Angle(rollRef, vesselModule.autopilotDirectionWanted);
             if (angleToRef < 2.5 || angleToRef > 177.5)
             {
+                vesselModule.isRollRefDefined = false;
                 vesselModule.lockedRollMode = false;
-                rollRef = - vessel.GetTransform().forward;
+                rollRef = -vessel.GetTransform().forward;
+            }
+            else
+            {
+                vesselModule.isRollRefDefined = true;
             }
 
-            // Get orientation
+            return rollRef;
+        }
+
+        private void UpdateAttitude(Vector3d rollRef)
+        {
             switch (vesselModule.autopilotMode)
             {
                 case SASMode.Hold:
@@ -384,7 +349,8 @@ namespace MandatoryRCS
                         }
                         else
                         {
-                            KeepCurrentAttitude();
+                            vesselModule.autopilotDirectionWanted = vessel.GetTransform().up;
+                            vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, rollRef);
                         }
                     }
                     break;
@@ -408,30 +374,64 @@ namespace MandatoryRCS
                     float pitchInput = vesselModule.flightCtrlState.pitch;
                     float yawInput = vesselModule.flightCtrlState.yaw;
                     // Update direction with pitch and yaw input
-        
-                    vesselModule.autopilotDirectionWanted += vessel.ReferenceTransform.rotation * new Vector3(yawInput * TimeWarp.fixedDeltaTime * 0.2f, 0, -pitchInput * TimeWarp.fixedDeltaTime * 0.2f);
-                    vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, -vessel.GetTransform().forward);
+
+                    vesselModule.autopilotDirectionWanted += vessel.ReferenceTransform.rotation * new Vector3(yawInput * TimeWarp.fixedDeltaTime * 0.5f, 0, -pitchInput * TimeWarp.fixedDeltaTime * 0.5f);
+                    vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, rollRef);
                     // Reset pitch and yaw input
                     vesselModule.flightCtrlState.pitch = 0;
                     vesselModule.flightCtrlState.yaw = 0;
                     break;
                 case SASMode.KillRot:
                     vesselModule.flyByWire = false;
+                    vesselModule.lockedRollMode = false;
+                    vesselModule.isRollRefDefined = false;
                     vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vessel.GetTransform().up, -vessel.GetTransform().forward);
                     break;
                 default:
                     vesselModule.flyByWire = false;
                     vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, rollRef);
-                    if (vesselModule.lockedRollMode)
-                    {
-                        vesselModule.autopilotAttitudeWanted *= Quaternion.Euler(0, 0, -vesselModule.currentRoll);
-                    }
                     break;
             }
 
-            // Ensure we use a normalized vector
-            vesselModule.autopilotDirectionWanted = vesselModule.autopilotDirectionWanted.normalized;
+            // If locked roll is enabled, apply the roll offset
+            if (vesselModule.lockedRollMode)
+            {
+                vesselModule.autopilotAttitudeWanted *= Quaternion.Euler(0, 0, -vesselModule.currentRoll);
+            }
+        }
 
+        public override void ComponentUpdate()
+        {
+            // All this isn't called for unloaded vessels
+            if (vesselModule.currentState == VesselState.Unloaded) { return; }
+
+            // Update pilotIsIdle here because if mode == flybywire we may reset the ctrlState values
+            if (vesselModule.currentState == VesselState.InPhysics && vesselModule.flightCtrlState != null) 
+            {
+                vesselModule.pilotIsIdle = vesselModule.flightCtrlState.isIdle;
+            }
+            else
+            {
+                vesselModule.pilotIsIdle = true;
+            }
+
+            // Update SAS mode, context and target then reset to KillRot if necessary
+            if (UpdateTargetAndModeAndContext())
+            {
+                vesselModule.autopilotMode = SASMode.KillRot;
+            }
+
+            // Get direction vector
+            vesselModule.autopilotDirectionWanted = GetDirectionVector();
+
+            // Get rollref vector and update roll state
+            Vector3d rollRef = UpdateRollRef();
+
+            // Get requested attitude Quaternion using the direction and rollref vectors
+            UpdateAttitude(rollRef);
+
+            // Ensure we always use a normalized vector
+            vesselModule.autopilotDirectionWanted = vesselModule.autopilotDirectionWanted.normalized;
 
             // Checking if the timewarping / persistent hold mode should be enabled
             if (vesselModule.currentState == VesselState.InPhysics)

@@ -1,49 +1,20 @@
-﻿
-/* LICENSE INFORMATION
- * This file and all code it contains is licensed under the GNU General Public License v3.0
- * It is derived from MechJeb2 Copyright (C) 2013 
+﻿/* This file and all code it contains is licensed under the GNU General Public License v3.0
+ * It is based on the code from the MechJeb2 plugin
  * MechJeb2 can be found at https://github.com/MuMech/MechJeb2
  */
 
 using MandatoryRCS.Lib;
-using MandatoryRCS.UI;
 using System;
 using System.Linq;
 using UnityEngine;
 using static MandatoryRCS.ComponentSASAttitude;
 
-/* MECHJEB INTEGRATION GOALS :
- * - SAS Menu
- *   - "Force roll"
- *   - "Maximum relative angular velocity" -> slider in the SAS menu
- *   - "autoexecute maneuver" -> to be made compliant with control levels
- * - RCS Menu
- *   - "RCS auto mode" -> needs to be tweaked ?
- *   - "RCS balancer" + overdrive level -> test overdrive 
- *   - global RCS throttle : currently not implemented in mechjeb.
- * - SAS markers revamp :
- * 
-
-    - MARKER : "Maximum relative angular velocity"
-    - MARKER : "Target the sun"
-    - MARKER : RCS auto mode
-
-    - Implement the hold and holdsmooth SAS markers
-    - Fix the targetcorrected marker (and maybe remove the retrograde corrected, more tests needed on this)
-
-    OTHER WANTED FEATURES :
-    - Maximum relative angular velocity UI control -> slider in the SAS menu ?
-    - RCS auto mode -> RCS menu
+/* OTHER WANTED FEATURES :
     - Global RCS throttle -> RCS menu
     - RCS optimizer -> maybe at first something basic that disable non-optimized directions, this seems ok
-
-    - Navball markers for the currently registered SAS vector, for the target parallel/antiparallel and for the target corrected
-    - Maybe also a full navball controller that allow to move the sas pitch/yaw vector, using an overlay on the navball
-
     - Node executor -> dependency on betterburntime ?
     - Suicide burn executor -> dependency on betterburntime ?
  */
-
 
 namespace MandatoryRCS
 {
@@ -180,14 +151,6 @@ namespace MandatoryRCS
             bool userCommandingPitchYaw = (Mathfx.Approx(s.pitch, s.pitchTrim, 0.1F) ? false : true) || (Mathfx.Approx(s.yaw, s.yawTrim, 0.1F) ? false : true);
             bool userCommandingRoll = (Mathfx.Approx(s.roll, s.rollTrim, 0.1F) ? false : true);
 
-            //if (attitudeKILLROT)
-            //{
-            //    if (lastReferencePart != vessel.GetReferenceTransformPart() || userCommandingPitchYaw || userCommandingRoll)
-            //    {
-            //        attitudeTo(Quaternion.LookRotation(vessel.GetTransform().up, -vessel.GetTransform().forward), AttitudeReference.INERTIAL, null);
-            //        lastReferencePart = vessel.GetReferenceTransformPart();
-            //    }
-            //}
             if (userCommandingPitchYaw || userCommandingRoll)
             {
                 Reset();
@@ -203,41 +166,6 @@ namespace MandatoryRCS
                 if (!double.IsNaN(act.x)) s.pitch = Mathf.Clamp((float)(act.x), -drive_limit, drive_limit);
                 if (!double.IsNaN(act.z)) s.yaw = Mathf.Clamp((float)(act.z), -drive_limit, drive_limit);
             }
-
-            //// RCS and SAS control:
-            //Vector3d absErr;            // Absolute error (exag º)
-            //absErr.x = Math.Abs(deltaEuler.x);
-            //absErr.y = Math.Abs(deltaEuler.y);
-            //absErr.z = Math.Abs(deltaEuler.z);
-
-            //if ((absErr.x < 0.4) && (absErr.y < 0.4) && (absErr.z < 0.4))
-            //{
-            //    if (timeCount < 50)
-            //    {
-            //        timeCount++;
-            //    }
-            //    else
-            //    {
-            //        if (RCS_auto)
-            //        {
-            //            if (attitudeRCScontrol && core.rcs.users.Count == 0)
-            //            {
-            //                part.vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, false);
-            //            }
-            //        }
-            //    }
-            //}
-            //else if ((absErr.x > 1.0) || (absErr.y > 1.0) || (absErr.z > 1.0))
-            //{
-            //    timeCount = 0;
-            //    if (RCS_auto && ((absErr.x > 3.0) || (absErr.y > 3.0) || (absErr.z > 3.0)))
-            //    {
-            //        if (attitudeRCScontrol)
-            //        {
-            //            part.vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, true);
-            //        }
-            //    }
-            //}
         } // end of SetFlightCtrlState
 
         public void Reset()
@@ -323,7 +251,8 @@ namespace MandatoryRCS
                     vm.autopilotMode = SASMode.KillRot;
                 }
             }
-            else
+            // TODO : the vesselModule seems to exist in the Vessel even if unloaded, why are we going into the protovessel ?
+            else if (data.host.protoVessel.vesselModules != null)
             {
                 bool SASModeLock = false;
                 SASMode sasMode = SASMode.KillRot;

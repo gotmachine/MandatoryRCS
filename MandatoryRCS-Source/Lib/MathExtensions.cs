@@ -1,7 +1,5 @@
-﻿
-/* LICENSE INFORMATION
- * This file and all code it contains is licensed under the GNU General Public License v3.0
- * It is derived from MechJeb2 Copyright (C) 2013 
+﻿/* This file and all code it contains is licensed under the GNU General Public License v3.0
+ * It is based on the code from the MechJeb2 plugin
  * MechJeb2 can be found at https://github.com/MuMech/MechJeb2
  */
 

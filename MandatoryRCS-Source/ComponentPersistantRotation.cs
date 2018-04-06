@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿/* 
+ * This file and all code it contains is released in the public domain
+ */
+
 using UnityEngine;
 
 namespace MandatoryRCS

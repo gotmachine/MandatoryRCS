@@ -1,13 +1,12 @@
-﻿using KSP.UI;
+﻿/* 
+ * This file and all code it contains is released in the public domain
+ */
+
 using KSP.UI.Screens.Flight;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using static FlightGlobals;
 using static MandatoryRCS.ComponentSASAttitude;
 
@@ -58,54 +57,62 @@ namespace MandatoryRCS.UI
         // Other markers
         Sprite spriteRCSAuto;
         Sprite spriteSun;
+        Sprite spriteVel0;
         Sprite spriteVel1;
         Sprite spriteVel2;
         Sprite spriteVel3;
         Sprite spriteVel4;
         Sprite spriteVel5;
+        Sprite spriteVel6;
+        // NavBall markers
+        Sprite spriteFlyByWireNavBall;
 
         private void GetSprites()
         {
-             spriteOnLocked            = UILib.GetSprite("OVERLAY_GREEN");
-             spriteOnNotLocked         = UILib.GetSprite("OVERLAY_YELLOW");
-             spriteOff                 = UILib.GetSprite("OVERLAY_RED");
+            spriteOnLocked            = UILib.GetSprite("OVERLAY_GREEN");
+            spriteOnNotLocked         = UILib.GetSprite("OVERLAY_YELLOW");
+            spriteOff                 = UILib.GetSprite("OVERLAY_RED");
             // Markers
-             spriteHold                = UILib.GetSprite("HOLDSMOOTH");
-             spriteFlyByWire           = UILib.GetSprite("FLYBYWIRE");
-             spriteManeuver            = UILib.GetSprite("MANEUVER");
-             spriteKillRot             = UILib.GetSprite("KILLROT");
-             spriteTarget              = UILib.GetSprite("TARGET");
-             spriteAntiTarget          = UILib.GetSprite("ANTITARGET");
-             spritePrograde            = UILib.GetSprite("PROGRADE");
-             spriteRetrograde          = UILib.GetSprite("RETROGRADE");
-             spriteNormal              = UILib.GetSprite("NORMAL");
-             spriteAntiNormal          = UILib.GetSprite("ANTINORMAL");
-             spriteRadialIn            = UILib.GetSprite("RADIAL_IN");
-             spriteRadialOut           = UILib.GetSprite("RADIAL_OUT");
-             spriteProgradeCorrected   = UILib.GetSprite("PROGRADE_CORRECTED");
-             spriteRetrogradeCorrected = UILib.GetSprite("RETROGRADE_CORRECTED");
-             spriteParallel            = UILib.GetSprite("PARALLEL");
-             spriteAntiParallel        = UILib.GetSprite("ANTIPARALLEL");
+            spriteHold                = UILib.GetSprite("HOLDSMOOTH");
+            spriteFlyByWire           = UILib.GetSprite("FLYBYWIRE");
+            spriteManeuver            = UILib.GetSprite("MANEUVER");
+            spriteKillRot             = UILib.GetSprite("KILLROT");
+            spriteTarget              = UILib.GetSprite("TARGET");
+            spriteAntiTarget          = UILib.GetSprite("ANTITARGET");
+            spritePrograde            = UILib.GetSprite("PROGRADE");
+            spriteRetrograde          = UILib.GetSprite("RETROGRADE");
+            spriteNormal              = UILib.GetSprite("NORMAL");
+            spriteAntiNormal          = UILib.GetSprite("ANTINORMAL");
+            spriteRadialIn            = UILib.GetSprite("RADIAL_IN");
+            spriteRadialOut           = UILib.GetSprite("RADIAL_OUT");
+            spriteProgradeCorrected   = UILib.GetSprite("PROGRADE_CORRECTED");
+            spriteRetrogradeCorrected = UILib.GetSprite("RETROGRADE_CORRECTED");
+            spriteParallel            = UILib.GetSprite("PARALLEL");
+            spriteAntiParallel        = UILib.GetSprite("ANTIPARALLEL");
             // Roll markers
-             spriteFreeRoll            = UILib.GetSprite("FREE_ROLL");
-             spriteRollRight           = UILib.GetSprite("ROLL_RIGHT");
-             spriteRollLeft            = UILib.GetSprite("ROLL_LEFT");
-             spriteRoll0               = UILib.GetSprite("ROT0");
-             spriteRoll45N             = UILib.GetSprite("ROT-45");
-             spriteRoll90N             = UILib.GetSprite("ROT-90");
-             spriteRoll135N            = UILib.GetSprite("ROT-135");
-             spriteRoll45              = UILib.GetSprite("ROT45");
-             spriteRoll90              = UILib.GetSprite("ROT90");
-             spriteRoll135             = UILib.GetSprite("ROT135");
-             spriteRoll180             = UILib.GetSprite("ROT180");
+            spriteFreeRoll            = UILib.GetSprite("FREE_ROLL");
+            spriteRollRight           = UILib.GetSprite("ROLL_RIGHT");
+            spriteRollLeft            = UILib.GetSprite("ROLL_LEFT");
+            spriteRoll0               = UILib.GetSprite("ROT0");
+            spriteRoll45N             = UILib.GetSprite("ROT-45");
+            spriteRoll90N             = UILib.GetSprite("ROT-90");
+            spriteRoll135N            = UILib.GetSprite("ROT-135");
+            spriteRoll45              = UILib.GetSprite("ROT45");
+            spriteRoll90              = UILib.GetSprite("ROT90");
+            spriteRoll135             = UILib.GetSprite("ROT135");
+            spriteRoll180             = UILib.GetSprite("ROT180");
             // Other markers
-             spriteRCSAuto             = UILib.GetSprite("RCSAUTO");
-             spriteSun                 = UILib.GetSprite("SUN");
-             spriteVel1                = UILib.GetSprite("VEL1");
-             spriteVel2                = UILib.GetSprite("VEL2");
-             spriteVel3                = UILib.GetSprite("VEL3");
-             spriteVel4                = UILib.GetSprite("VEL4");
-             spriteVel5                = UILib.GetSprite("VEL5");
+            spriteRCSAuto             = UILib.GetSprite("RCSAUTO");
+            spriteSun                 = UILib.GetSprite("SUN");
+            spriteVel0                = UILib.GetSprite("VEL0");
+            spriteVel1                = UILib.GetSprite("VEL1");
+            spriteVel2                = UILib.GetSprite("VEL2");
+            spriteVel3                = UILib.GetSprite("VEL3");
+            spriteVel4                = UILib.GetSprite("VEL4");
+            spriteVel5                = UILib.GetSprite("VEL5");
+            spriteVel6                = UILib.GetSprite("VEL6");
+            // NavBall markers
+            spriteFlyByWireNavBall    = UILib.GetSprite("FLYBYWIRE_NAV");
         }
         #endregion
 
@@ -133,7 +140,7 @@ namespace MandatoryRCS.UI
 
         private SASMarkerToggle sunTarget;
         private SASMarkerToggle rcsAuto;
-        private SASMarkerButton velLimiter;
+        private SASMarkerSimple velLimiter;
         #endregion
 
         private NavBallvector autopilotDirection;
@@ -196,8 +203,7 @@ namespace MandatoryRCS.UI
             GameEvents.onVesselSwitching.Remove(onVesselSwitching);
         }
 
-        // TODO : currently, this is our "scene just created" entry point
-        // There is a noticeable delay between the stock UI display and our UI display
+        // TODO : on scene load, there is a noticeable delay
         private void LateUpdate()
         {
             // On scene load, gui will be initialized before 
@@ -216,24 +222,15 @@ namespace MandatoryRCS.UI
                 if (!guiInitialized) return;
             }
 
+            // Update navball markers
+            UpdateFlyByWireMarker();
+
             // Hide/show the panel according to SAS enabled state
             if (vesselModule.autopilotEnabled != guiEnabled)
             {
                 guiEnabled = vesselModule.autopilotEnabled;
-                SetMode(SASMode.KillRot, true, true);
                 mainButtonPanel.SetActive(guiEnabled);
-            }
-
-            if (vesselModule.autopilotMode == SASMode.FlyByWire || vesselModule.autopilotMode == SASMode.Hold)
-            {
-                if (!autopilotDirection.IsVisible())
-                    autopilotDirection.SetVisible(true);
-
-                autopilotDirection.Update(vesselModule.autopilotDirectionWanted);
-            }
-            else if (autopilotDirection.IsVisible()) 
-            {
-                autopilotDirection.SetVisible(false);
+                SetMode(SASMode.KillRot, true, true);
             }
 
             if (!guiEnabled) return;
@@ -241,9 +238,10 @@ namespace MandatoryRCS.UI
             // Note : ComponentSASAttitude should be responsible for all changes
             UpdateUIFromVesselModule();
 
-            UpdateManeuverMarkers(vesselModule.hasManeuverNode);
-            UpdateTargetMarkers(vesselModule.currentTarget != null);
-            UpdateVelocityMarkers(FlightGlobals.GetDisplaySpeed() > 0.1);
+            SetManeuverMarkersActive(vesselModule.hasManeuverNode);
+            SetTargetMarkersActive(vesselModule.currentTarget != null);
+            SetVelocityMarkersActive(FlightGlobals.GetDisplaySpeed() > 0.1);
+            SetRollModeActive();
             UpdateLockStatus();
         }
 
@@ -259,7 +257,7 @@ namespace MandatoryRCS.UI
         }
         #endregion
 
-        #region Init methods
+        #region Init
         private bool CreateUI()
         {
             if (!FlightGlobals.ready || FlightGlobals.ActiveVessel == null) return false;
@@ -310,20 +308,22 @@ namespace MandatoryRCS.UI
             rollLeft = new SASMarkerButton(this, "Roll left", new Vector2(xoffset - 3 + 0, yoffset - 30), mainButtonPanel, spriteRollLeft, spriteOff, spriteOnLocked);
             sunTarget = new SASMarkerToggle(this, "Target Sun", new Vector2(xoffset + 9 + 25, yoffset - 55), mainButtonPanel, spriteSun, spriteOff, spriteOnLocked, spriteOnNotLocked);
             rcsAuto = new SASMarkerToggle(this, "RCS auto", new Vector2(xoffset + 9 + 50, yoffset - 55), mainButtonPanel, spriteRCSAuto, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            velLimiter = new SASMarkerButton(this, "SAS aggressivity", new Vector2(xoffset + 9 + 0, yoffset - 55), mainButtonPanel, spriteVel3, spriteOff, spriteOnLocked);
+            velLimiter = new SASMarkerSimple(this, "SAS aggressivity", new Vector2(xoffset + 9 + 0, yoffset - 55), mainButtonPanel, spriteVel3);
 
             // Create SASMode<>Toggle dictionnaries
             CreateDictionnaries();
 
             // Update UI according to the vesselModule saved state
             UpdateUIFromVesselModule(true);
-            UpdateManeuverMarkers(vesselModule.hasManeuverNode, true);
-            UpdateTargetMarkers(vesselModule.currentTarget != null, true);
-            UpdateVelocityMarkers(FlightGlobals.GetDisplaySpeed() > 0.1, true);
+            SetManeuverMarkersActive(vesselModule.hasManeuverNode, true);
+            SetTargetMarkersActive(vesselModule.currentTarget != null, true);
+            SetVelocityMarkersActive(FlightGlobals.GetDisplaySpeed() > 0.1, true);
+            SetRollModeActive(true);
 
             guiEnabled = true;
 
-            autopilotDirection = new NavBallvector("autopilotDirection", navBallVectorsPivot, navBall, spriteFlyByWire, Color.grey, true);
+            autopilotDirection = new NavBallvector("autopilotDirection", navBallVectorsPivot, navBall, spriteFlyByWireNavBall, new Color32(30,216,40,255), true);
+            UpdateFlyByWireMarker();
 
             return true;
         }
@@ -368,6 +368,21 @@ namespace MandatoryRCS.UI
 
         #region UI logic
 
+        private void UpdateFlyByWireMarker()
+        {
+            if (vesselModule.autopilotMode == SASMode.FlyByWire || vesselModule.autopilotMode == SASMode.Hold)
+            {
+                if (!autopilotDirection.IsVisible())
+                    autopilotDirection.SetVisible(true);
+
+                autopilotDirection.Update(vesselModule.autopilotDirectionWanted);
+            }
+            else if (autopilotDirection.IsVisible())
+            {
+                autopilotDirection.SetVisible(false);
+            }
+        }
+
         public void UpdateLockStatus()
         {
             SASMarkerToggle toggle;
@@ -375,7 +390,7 @@ namespace MandatoryRCS.UI
             toggle.UpdateLockState(vesselModule.rwLockedOnDirection);
         }
 
-        public void UpdateTargetMarkers(bool active, bool forceUpdate = false)
+        public void SetTargetMarkersActive(bool active, bool forceUpdate = false)
         {
             if (!forceUpdate && targetMarkersActive == active) return;
             targetMarkersActive = active;
@@ -399,7 +414,7 @@ namespace MandatoryRCS.UI
             }
         }
 
-        public void UpdateManeuverMarkers(bool active, bool forceUpdate = false)
+        public void SetManeuverMarkersActive(bool active, bool forceUpdate = false)
         {
             if (!forceUpdate && maneuverMarkerActive == active) return;
             maneuverMarkerActive = active;
@@ -411,7 +426,7 @@ namespace MandatoryRCS.UI
             }
         }
 
-        public void UpdateVelocityMarkers(bool active, bool forceUpdate = false)
+        public void SetVelocityMarkersActive(bool active, bool forceUpdate = false)
         {
             if (!forceUpdate && velocityMarkersActive == active) return;
             velocityMarkersActive = active;
@@ -430,6 +445,17 @@ namespace MandatoryRCS.UI
                 SetMode(SASMode.KillRot);
             }
         }
+
+        public void SetRollModeActive(bool forceUpdate = false)
+        {
+            if (!forceUpdate && vesselModule.isRollRefDefined == freeRoll.GetActive()) return;
+
+            freeRoll.SetActive(vesselModule.isRollRefDefined);
+        }
+
+
+                    
+
         #endregion
 
         #region SAS State update
@@ -491,7 +517,7 @@ namespace MandatoryRCS.UI
             throw new NotImplementedException();
         }
 
-        public void ButtonClick(SASMarkerButton button)
+        public void ButtonClick(SASMarker button)
         {
             if (button == velLimiter)
             {
@@ -566,21 +592,23 @@ namespace MandatoryRCS.UI
             // Cycle trough possible values
             else
             {
-                velocityLimiter += 5;
-                if (velocityLimiter > 25) velocityLimiter = 5;
+                velocityLimiter += 3;
+                if (velocityLimiter > 24) velocityLimiter = 6;
             }
 
             // Update symbol + value sanity check
             switch (velocityLimiter)
             {
-                case 5: velLimiter.SetSymbolSprite(spriteVel1); break;
-                case 10: velLimiter.SetSymbolSprite(spriteVel2); break;
-                case 15: velLimiter.SetSymbolSprite(spriteVel3); break;
-                case 20: velLimiter.SetSymbolSprite(spriteVel4); break;
-                case 25: velLimiter.SetSymbolSprite(spriteVel5); break;
+                case 6: velLimiter.SetSprite(spriteVel0); break;
+                case 9: velLimiter.SetSprite(spriteVel1); break;
+                case 12: velLimiter.SetSprite(spriteVel2); break;
+                case 15: velLimiter.SetSprite(spriteVel3); break;
+                case 18: velLimiter.SetSprite(spriteVel4); break;
+                case 21: velLimiter.SetSprite(spriteVel5); break;
+                case 24: velLimiter.SetSprite(spriteVel6); break;
                 default:
                     velocityLimiter = 15;
-                    velLimiter.SetSymbolSprite(spriteVel3);
+                    velLimiter.SetSprite(spriteVel3);
                     break;
             }
 
