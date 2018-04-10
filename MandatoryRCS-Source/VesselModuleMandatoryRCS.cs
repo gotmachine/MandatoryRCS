@@ -4,7 +4,9 @@
 
 using MandatoryRCS.Lib;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using static FlightGlobals;
 using static MandatoryRCS.ComponentSASAttitude;
 
 namespace MandatoryRCS
@@ -17,22 +19,29 @@ namespace MandatoryRCS
         #region Vessel state
         public enum VesselState
         {
-            InPhysics,
-            Packed,
+            
+            PhysicsNotReady,
+            PhysicsVelocityFrame,
+            PhysicsReady,
+            PackedLoadingUnloadedNotReady,
+            PackedLoadingFirstFrameReady,
+            PackedReady,
             Unloaded
         }
         public VesselState currentState;
-        public bool isInPhysicsFirstFrame;
+
         public bool playerControlled;
-        public bool pilotIsIdle;
+        public bool pilotRotationInput;
+        public bool pilotTranslationInput;
         public FlightCtrlState flightCtrlState;
-        public ITargetable currentTarget;
+
+
         #endregion
 
         #region Vessel physics info
         // Angular velocity is saved
         [KSPField(isPersistant = true)]
-        public Vector3d angularVelocity;
+        public Vector3 angularVelocity;
         public Vector3d MOI;
         public Vector3d torqueAvailable;
         public Vector3d angularDistanceToStop; // inertia in MechJeb VesselState
@@ -65,15 +74,12 @@ namespace MandatoryRCS
         [KSPField(isPersistant = true)]
         public int velocityLimiter = 15;
 
-        [KSPField(isPersistant = true)]
-        public bool sunIsTarget = false;
-
         public Quaternion autopilotAttitudeWanted;
         public Vector3d autopilotDirectionWanted;
         public bool isRollRefDefined = true;
+        public bool hasVelocity = false;
         public bool flyByWire = false;
         public bool autopilotModeHasChanged = false;
-        public bool hasManeuverNode = false;
         public bool hasSAS = false;
 
         #endregion
@@ -81,7 +87,16 @@ namespace MandatoryRCS
         public bool rwLockedOnDirection;
 
         public bool ready = false;
-        public int frameNumber = 0;
+        public int loadingFrameNumber = 0;
+        private bool callbackFirstFrameSkipped = false;
+
+        [KSPField(isPersistant = true)]
+        public ProtoTargetInfo targetInfo = new ProtoTargetInfo();
+        public ITargetable currentTarget;
+        public bool targetNeedPhysics;
+        public bool vesselTargetDirty;
+        public bool vesselTargetDirtyFirstFrame;
+        public int targetDirtyFrameCounter;
 
         public ComponentSASAutopilot sasAutopilot;
         public ComponentSASAttitude sasAttitude;
@@ -110,51 +125,55 @@ namespace MandatoryRCS
             }
 
             // Note : OnPreAutopilotUpdate seems to be called AFTER the vesselModule FixedUpdate();
-            vessel.OnPreAutopilotUpdate -= LoadedUpdate;
-            vessel.OnPreAutopilotUpdate += LoadedUpdate;
-
-            GameEvents.onVesselLoaded.Add(onVesselLoaded);
-                //new EventData<Vessel, Vessel>("onVesselSwitchingToUnloaded")
+            vessel.OnPreAutopilotUpdate -= OnPreAutopilotUpdate;
+            vessel.OnPreAutopilotUpdate += OnPreAutopilotUpdate;
+            currentState = VesselState.Unloaded;
+            callbackFirstFrameSkipped = false;
         }
 
-        private void OnDestroy()
+
+
+        private void OnPreAutopilotUpdate(FlightCtrlState s)
         {
-            //vessel.OnPreAutopilotUpdate -= LoadedUpdate; // This cause a nullref at startup !?!
+            VesselModuleUpdate(true, s);
         }
 
-        public override void OnUnloadVessel()
+        private void VesselModuleUpdate(bool fromCallback, FlightCtrlState ctrlState = null)
         {
-            
-
-        }
-
-        private void onVesselLoaded(Vessel vessel)
-        {
-            // On load, stock throw an exception if the Sun is the target, so we reset it before it happens
-            if (vessel.protoVessel.targetInfo.uniqueName == "Sun")
+            // In the frame transitionning from FixedUpdate to the OnPreAutopilotUpdate callback and vice-versa,
+            // VesselModuleUpdate will be called twice : first by FixedUpdate, then by the callback.
+            // We need to abort this second call
+            if (!callbackFirstFrameSkipped && fromCallback)
             {
-                vessel.protoVessel.targetInfo.uniqueName = "";
-                vessel.protoVessel.targetInfo.targetType = ProtoTargetInfo.Type.Null;
+                callbackFirstFrameSkipped = true;
+                return;
             }
-        }
+            if (callbackFirstFrameSkipped && !fromCallback)
+            {
+                callbackFirstFrameSkipped = false;
+            }
 
-        private void LoadedUpdate(FlightCtrlState s = null)
-        {
-
-            // Update physics and control state
+            // Update technical state (loaded, packed, etc) and some other global info
             UpdateVesselState();
 
-            // Do nothing more for unloaded vessels
-            if (!vessel.loaded) return;
+            if (loadingFrameNumber != 0 && currentState != VesselState.Unloaded)
+            {
+                Debug.Log("[MRCS] [" + vessel.vesselName + "] Frame=" + loadingFrameNumber + " State=" + currentState + " FromCallback=" + fromCallback + " FlightGlobalsReady=" + FlightGlobals.ready);
+            }
+
+            // Do nothing more for if vessel is unloaded or if the flightIntegrator is currently loading the vessel
+            if (currentState == VesselState.Unloaded || currentState == VesselState.PackedLoadingUnloadedNotReady) return;
+
+
 
             // Get FlightCtrlState
-            flightCtrlState = s;
+            flightCtrlState = ctrlState;
 
-            // Update angular velocity for in physics vessels but not in the
-            // first frame because the persistent rotation component may want to restore it.
-            if (currentState == VesselState.InPhysics && !isInPhysicsFirstFrame)
+            // Update angular velocity for in physics vessels
+            // NOTE: for our purpose Vessel.angularVelocityD is not necessary
+            if (currentState == VesselState.PhysicsReady)
             {
-                angularVelocity = Vessel.angularVelocityD;
+                angularVelocity = Vessel.angularVelocity;
             }
 
             // Update the SAS state according to the various rules that may alter it
@@ -162,23 +181,30 @@ namespace MandatoryRCS
             if (autopilotModeHasChanged || !hasSAS) autopilotPersistentModeLock = false;
             if (hasSAS) sasAttitude.ComponentUpdate();
 
+            //Debug.Log(vessel.name + " - packed ? " + vessel.packed + "V");
+            //Debug.Log("dirWan = " + autopilotDirectionWanted.x + "/" + autopilotDirectionWanted.y + "/" + autopilotDirectionWanted.z);
+            //Debug.Log("intPos = " + currentTarget.GetTransform().position.x + "/" + currentTarget.GetTransform().position.y + "/" + currentTarget.GetTransform().position.z);
+            //Debug.Log("extPos = " + vessel.targetObject.GetTransform().position.x + "/" + vessel.targetObject.GetTransform().position.y + "/" + vessel.targetObject.GetTransform().position.z);
+
             // Then rotate the vessel according to the angular velocity and the SAS state
             persistentRotation.ComponentUpdate();
 
             // Update autopilot things
-            if (hasSAS && currentState == VesselState.InPhysics)
+            if (hasSAS && currentState == VesselState.PhysicsReady)
             {
                 // adjust the reaction wheels torque
                 torqueControl.ComponentUpdate();
 
-                // For now, non-player controlled vessels won't have their autopilot active
-                if (autopilotEnabled && s != null)
+                // Update the autopilot action
+                if (autopilotEnabled && flightCtrlState != null)
                 {
                     // Get MoI first, it isn't dependent on anything else
                     VesselPhysics.GetVesselMoI(vessel, out MOI);
+
                     // We know how reaction wheels will behave, set RCS auto mode
                     // TODO : check if we need to reset the SAS PID on RCS enable/disable-> sasAutopilot.Reset()
                     RCSAutoSet();
+
                     // Get the available torque
                     VesselPhysics.GetVesselAvailableTorque(vessel, MOI, out torqueAvailable, out torqueReactionSpeed, out angularDistanceToStop);
 
@@ -197,15 +223,21 @@ namespace MandatoryRCS
 
         private void FixedUpdate()
         {
-            // TODO : check again that LoadedUpdate() isn't called twice in the same frame at scene start or vessel switch
-            // If okay, remove this
-            frameNumber += 1;
+            //// TODO : check again that LoadedUpdate() isn't called twice in the same frame at scene start or vessel switch
+            if (vessel.loaded)
+            {
+                loadingFrameNumber += 1;
+            }
+            else
+            {
+                loadingFrameNumber = 0;
+            }
 
             // Do the update on all vessels except the one that is currently active (if any), if it is in physics.
             // In this specific situation, the update is called by the OnPreAutopilotUpdate callback
             // Note : don't check for FlightGlobals.ready here, value may be inconsistent
             if (FlightGlobals.ActiveVessel == vessel && !vessel.packed) return;
-            LoadedUpdate();
+            VesselModuleUpdate(false, vessel.ctrlState);
         }
 
         private void RCSAutoSet()
@@ -213,7 +245,7 @@ namespace MandatoryRCS
             if (rcsAutoMode)
             {
                 bool enabled;
-                enabled = !rwLockedOnDirection && vessel.staticPressurekPa < 10;
+                enabled = (!rwLockedOnDirection || pilotTranslationInput) && vessel.staticPressurekPa < 10;
                 vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, enabled);
             }
         }
@@ -224,27 +256,69 @@ namespace MandatoryRCS
             // - It is in the physics bubble but in non-psysics timewarp
             // - It has just gone outside of the physics bubble
             // - It was just loaded, is in the physics bubble and will be unpacked in a few frames
-
             if (!Vessel.loaded)
             {
-                currentState = VesselState.Unloaded;
+                if (currentState != VesselState.Unloaded )
+                {
+                    currentState = VesselState.Unloaded;
+                }
             }
             else if (Vessel.packed)
             {
-                currentState = VesselState.Packed;
-            }
-            else if (FlightGlobals.ready)
-            {
-                if (!isInPhysicsFirstFrame && (currentState == VesselState.Packed || currentState == VesselState.Unloaded))
+                // OnVesselGoOnRails can lead to here in two possible states :
+                // - PackedLoadingFirstFrame if we are coming from an unloaded vessel -> doesn't seem to happen
+                // - PackedReady if we are coming from a in physics vessel
+
+                // If we were unloaded, mark the vessel as PackedLoadingFromUnloaded
+                if (currentState == VesselState.Unloaded)
                 {
-                    isInPhysicsFirstFrame = true;
+                    currentState = VesselState.PackedLoadingUnloadedNotReady;
+                    vesselTargetDirty = true;
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] State change : Unloaded -> PackedLoadingUnloadedNotReady, target is dirty");
+                }
+
+                // If we were unloaded, check if we are in the flightIntegrator frame (usually only the first packed frame), then if not go to PackedLoadingFirstFrame
+                // A PackedLoadingFirstFrame vessel will have its attitude checked and its rotation applied according to the SAS state
+                if (currentState == VesselState.PackedLoadingUnloadedNotReady && !vessel.IsFirstFrame())
+                {
+                    currentState = VesselState.PackedLoadingFirstFrameReady;
+                }
+                // First frame is done, we switch to PackedReady
+                else if (currentState == VesselState.PackedLoadingFirstFrameReady)
+                {
+                    currentState = VesselState.PackedReady;
+                }
+
+                // If we loaded a scene that have multiple vessels, only the active one needs to stay in the PackedLoading state
+                // A PackedReady vessel will have its attitude checked and its persistent rotation applied 
+                //if (currentState == VesselState.PackedLoading && FlightGlobals.ready && vessel != FlightGlobals.ActiveVessel)
+                //{
+                //    currentState = VesselState.PackedReady;
+                //}
+            }
+            else
+            {
+                // OnVesselGoOnRails can lead to here in two possible states :
+                // - PhysicsLoading if we are coming from an unloaded vessel
+                // - PhysicsReady if we are coming from a vessel that was already in the scene
+                if (currentState == VesselState.PhysicsNotReady && !FlightGlobals.ready)
+                {
+                    currentState = VesselState.PhysicsNotReady;
+                }
+                else if (currentState != VesselState.PhysicsReady && currentState != VesselState.PhysicsVelocityFrame)
+                {
+                    currentState = VesselState.PhysicsVelocityFrame;
+                    vesselTargetDirtyFirstFrame = true;
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] Setting state to PhysicsVelocityFrame");
                 }
                 else
                 {
-                    isInPhysicsFirstFrame = false;
+                    currentState = VesselState.PhysicsReady;
                 }
-                currentState = VesselState.InPhysics;
             }
+
+            // Update nothing more for unloaded vessels
+            if (!Vessel.loaded) return;
 
             if (FlightGlobals.ActiveVessel != null && FlightGlobals.ActiveVessel == vessel)
             {
@@ -253,6 +327,68 @@ namespace MandatoryRCS
             else
             {
                 playerControlled = false;
+            }
+
+            if (currentState == VesselState.PackedLoadingFirstFrameReady || (currentState == VesselState.PhysicsVelocityFrame && targetNeedPhysics))
+            {
+                LoadTarget();
+            }
+            
+            if (vesselTargetDirty && playerControlled && (currentState == VesselState.PhysicsVelocityFrame || currentState == VesselState.PhysicsReady))
+            {
+                if (playerControlled)
+                {
+                    if (currentTarget != FlightGlobals.fetch.VesselTarget || autopilotContext != FlightGlobals.speedDisplayMode)
+                    {
+                        if (vesselTargetDirtyFirstFrame)
+                        {
+                            vesselTargetDirtyFirstFrame = false;
+                            // Stock is using a coroutine to restore the target, so it usually happen only 3-4 frames after physics loading.
+                            // We will wait a bit for this to happen, and after a few frames we will consider that something has gone wrong
+                            // and sync the stock target to ours.
+                            targetDirtyFrameCounter = 0;
+                            Debug.Log("[MRCS] [" + vessel.vesselName + "] Waiting for target to be resumed. Saved target : " + (currentTarget == null ? "null" : currentTarget.GetDisplayName()) + " Saved context : " + autopilotContext);
+                            Debug.Log("[MRCS] [" + vessel.vesselName + "] Stock target : " + (FlightGlobals.fetch.VesselTarget == null ? "null" : FlightGlobals.fetch.VesselTarget.GetDisplayName()) + " Stock context : " + FlightGlobals.speedDisplayMode);
+
+                            // Theorically we have prevented the stock code from saving the target if the Sun was selected
+                            // We are forced to do so because the stock code can't handle it (some coroutine if failing if the sun is restored as target)
+                            // So we have to set it manually, after loading
+                            if ((Object)currentTarget == Sun.Instance.sun)
+                            {
+                                SetTarget(Sun.Instance.sun, true, false);
+                                if (autopilotContext == SpeedDisplayModes.Target)
+                                {
+                                    SetContext(SpeedDisplayModes.Target, true, false);
+                                }
+                            }
+                        }
+
+
+                        if (targetDirtyFrameCounter > 30)
+                        {
+                            Debug.Log("[MRCS] [" + vessel.vesselName + "] WARNING, saved target : " + (currentTarget == null ? "null" : currentTarget.GetDisplayName()) + " Saved context : " + autopilotContext);
+                            Debug.Log("[MRCS] [" + vessel.vesselName + "] WARNING, stock target : " + (FlightGlobals.fetch.VesselTarget == null ? "null" : FlightGlobals.fetch.VesselTarget.GetDisplayName()) + " Stock context : " + FlightGlobals.speedDisplayMode);
+                            vesselTargetDirty = false;
+                            targetDirtyFrameCounter = -1;
+                            SetTarget(currentTarget, true, false);
+                            if (vessel == FlightGlobals.ActiveVessel)
+                            {
+                                SetContext(FlightGlobals.speedDisplayMode, true, false);
+                            }
+                            autopilotMode = SASMode.KillRot;
+                        }
+                        else
+                        {
+                            targetDirtyFrameCounter += 1;
+                            Debug.Log("[MRCS] [" + vessel.vesselName + "] Target dirty since " + targetDirtyFrameCounter + " frames");
+                        } 
+                    }
+                    else
+                    {
+                        vesselTargetDirty = false;
+                        targetDirtyFrameCounter = -1;
+                    }
+                }
             }
 
             // Do only persistent rotation for debris & flags...
@@ -265,6 +401,123 @@ namespace MandatoryRCS
                 hasSAS = true;
             }
 
+            if (vessel.vesselName == "DOCK POD TEST 2")
+            {
+                Debug.Log("Node: " + vessel.protoVessel.vesselModules.GetNode("VesselModuleMandatoryRCS").CountNodes + " - " + currentState);
+            }
+        }
+
+        public bool VesselHasManeuverNode()
+        {
+            return vessel.patchedConicSolver != null && vessel.patchedConicSolver.maneuverNodes.Count > 0;
+        }
+
+        public void SetTarget(ITargetable target, bool setFlightGlobals, bool setVesselModule)
+        {
+
+            if (setFlightGlobals)
+            {
+                if (!playerControlled)
+                {
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] WARNING : trying to set FlightGlobals.SpeedMode from a non player controlled vessel");
+                }
+                else
+                {
+                    FlightGlobals.fetch.SetVesselTarget(target, true);
+                }  
+            }
+
+            if (setVesselModule)
+            {
+                currentTarget = target;
+                targetInfo = new ProtoTargetInfo(target);
+            }
+
+
+        }
+
+        public void SetContext(SpeedDisplayModes mode, bool setFlightGlobals, bool setVesselModule)
+        {
+            if (setFlightGlobals)
+            {
+                if (!playerControlled)
+                {
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] WARNING : trying to set FlightGlobals.SpeedMode from a non player controlled vessel");
+                }
+                else
+                {
+                    FlightGlobals.SetSpeedMode(mode);
+                }
+                
+            }
+            if (setVesselModule)
+            {
+                autopilotContext = mode;
+            }
+            
+        }
+
+        private void LoadTarget()
+        {
+            // In the first fixedUpdate frame, when the vessel was just loaded and is still packed, we need to know what the target is to restore our attitude toward it
+            // Since parts and partmodules don't exist yet, if the target if of this type, we won't be able to restore it
+            // We use the targetNeedPhysics flag to know if should call this method again when we are in physics.
+
+            // This shoould already be set, but better safe than sorry
+            vesselTargetDirty = true;
+            targetDirtyFrameCounter = -1;
+
+            // Load targetInfo from ConfigNode
+            targetInfo.Load(vessel.protoVessel.vesselModules.GetNode("VesselModuleMandatoryRCS").GetNode("targetInfo"));
+
+            // Try to get the target Object
+            ITargetable savedTarget = targetInfo.FindTarget();
+
+            // If target is a Part or PartModule, it can't be accessed here because we are not in physics yet.
+            // But the FindTarget() method is smart and will return the vessel instead, so we temporally use it as fallback, and we will restore the real target latter
+            if (targetInfo.targetType == ProtoTargetInfo.Type.Part || targetInfo.targetType == ProtoTargetInfo.Type.PartModule)
+            {
+                targetNeedPhysics = true;
+                currentTarget = savedTarget;
+                Debug.Log("[MRCS] [" + vessel.vesselName + "] PackedLoadingFirstFrame : Found target of type : " + targetInfo.targetType + ", it will be restored when PhysicsReady");
+            }
+            // Maybe stock or other mods implement ITargetable, so we will try to restore this target latter but we reset the SAS state because we don't know how to 
+            // get that target orientation & position, and we need that for SAS persistence
+            else if (savedTarget == null && targetInfo.targetType != ProtoTargetInfo.Type.Null)
+            {
+                targetNeedPhysics = true;
+                currentTarget = null;
+                Debug.Log("[MRCS] [" + vessel.vesselName + "] PackedLoadingFirstFrame : Found target of unknown type, it will be restored when PhysicsReady");
+            }
+            // The target must be a Vessel or CelestialBody
+            else
+            {
+                targetNeedPhysics = false;
+                currentTarget = savedTarget;
+                Debug.Log("[MRCS] [" + vessel.vesselName + "] PackedLoadingFirstFrame : Restoring target : " + currentTarget.GetDisplayName());
+            }
+
+            // One way or another, if the target is null, we can't be in a target relative mode/copntext
+            if (currentTarget == null)
+            {
+                Debug.Log("[MRCS] [" + vessel.vesselName + "] PackedLoadingFirstFrame : No target restored");
+                if (sasAttitude.ModeInTargetContextOnly(autopilotMode))
+                {
+                    autopilotMode = SASMode.KillRot;
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] PackedLoadingFirstFrame : the SAS was in a target dependant mode, resetting to KillRot");
+                }
+                if (autopilotContext == SpeedDisplayModes.Target)
+                {
+                    autopilotContext = SpeedDisplayModes.Orbit;
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] PackedLoadingFirstFrame : the SAS was in Target context, resetting to Orbit");
+                }
+            }
+
+            // Force the flag to false if we are calling this from another state
+            if (currentState != VesselState.PackedLoadingFirstFrameReady)
+            {
+                targetNeedPhysics = false;
+            }
         }
     }
 }

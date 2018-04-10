@@ -3,6 +3,7 @@
  */
 
 using UnityEngine;
+using static MandatoryRCS.VesselModuleMandatoryRCS;
 
 namespace MandatoryRCS
 {
@@ -15,7 +16,7 @@ namespace MandatoryRCS
             // - It has gone outside of the physics bubble
             // - It was just loaded, is in the physics bubble and will be unpacked in a few frames
             //if (vessel.loaded && vessel.packed)
-            if (vesselModule.currentState == VesselModuleMandatoryRCS.VesselState.Packed)
+            if (vesselModule.currentState == VesselState.PackedReady || vesselModule.currentState == VesselState.PackedLoadingFirstFrameReady)
             {
                 // If the SAS is locked, we keep the vessel rotated toward the autopilot selection
                 if (vesselModule.autopilotPersistentModeLock)
@@ -38,21 +39,8 @@ namespace MandatoryRCS
 
             // Vessel is fully loaded and in physics
             // else if (vessel.loaded && !vessel.packed && FlightGlobals.ready)
-            else if (vesselModule.isInPhysicsFirstFrame)
+            else if (vesselModule.currentState == VesselState.PhysicsVelocityFrame)
             {
-                // Restore the vessel attitude according to the autopilot selection
-                if (vesselModule.autopilotPersistentModeLock)
-                {
-                    if (vesselModule.lockedRollMode)
-                    {
-                        SetVesselAttitude(vesselModule.autopilotAttitudeWanted * Quaternion.Euler(90, 0, 0));
-                    }
-                    else
-                    {
-                        SetVesselAttitude(vesselModule.autopilotDirectionWanted);
-                    }
-                }
-
                 // Restore the angular velocity
                 if (vesselModule.angularVelocity.magnitude > Settings.velocityThreesold)
                 {

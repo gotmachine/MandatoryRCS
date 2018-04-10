@@ -66,7 +66,7 @@ namespace MandatoryRCS
             float requestedTorqueFactor = 0;
 
             // On pilot rotation requests or if the SAS is disabled, use nerfed torque output
-            if (!vesselModule.pilotIsIdle || !vesselModule.autopilotEnabled)
+            if (vesselModule.pilotRotationInput || !vesselModule.autopilotEnabled)
             {
                 mode = TorqueMode.nerfed;
                 vesselModule.rwLockedOnDirection = false;

@@ -11,6 +11,8 @@ namespace MandatoryRCS
 {
     public class ComponentSASAttitude : ComponentBase
     {
+        private double maneuverNodeHash;
+
         public enum SASMode
         {
             Hold,
@@ -37,7 +39,7 @@ namespace MandatoryRCS
             vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, -vessel.GetTransform().forward);
         }
 
-        private double maneuverNodeHash;
+
 
         public bool ModeInTargetContextOnly(SASMode mode)
         {
@@ -65,105 +67,137 @@ namespace MandatoryRCS
                 || mode == SASMode.RetrogradeCorrected);
         }
 
-        private bool UpdateTargetAndModeAndContext()
+        public bool ModeUseVelocity(SASMode mode)
         {
-            // Should the Sun be our target ?
-            if (vesselModule.sunIsTarget)
+            switch (mode)
             {
-                // At this point currentTarget is the target from the last frame
-                // if it's not the sun, the target was changed and isn't the sun anymore
-                if (vessel.targetObject != vesselModule.currentTarget)
-                {
-                    vesselModule.sunIsTarget = false;
-                }
-                // The target should be the sun !
-                else if (vessel.targetObject != (ITargetable)Sun.Instance.sun)
-                {
-                    FlightGlobals.fetch.SetVesselTarget(Sun.Instance.sun, true);
-                    vesselModule.currentTarget = Sun.Instance.sun;
-                }
-            }
-            else if (vessel.targetObject == (ITargetable)Sun.Instance.sun)
-            {
-                vessel.targetObject = null;
+                case SASMode.Prograde:
+                case SASMode.Retrograde:
+                case SASMode.ProgradeCorrected:
+                case SASMode.RetrogradeCorrected:
+                    return true;
+                default:
+                    return false;
             }
 
-            // It seems that disabling the autopilot also disable the stock code that revert 
-            // back to the orbit speedDisplayMode if the target is null
-            if (vessel.targetObject == null && FlightGlobals.speedDisplayMode == SpeedDisplayModes.Target)
-                FlightGlobals.SetSpeedMode(SpeedDisplayModes.Orbit);
+        }
 
-            // Now we handle here every possible change that could change the SAS mode and context
-            // TODO : Revert to killrot if control part is intentionally changed (check reftransform ?)
-            bool revertToKillRot = false;
+        private void ResetToKillRot()
+        {
+            vesselModule.autopilotMode = SASMode.KillRot;
+            vesselModule.autopilotPersistentModeLock = false;
+        }
 
-            // Stock UI interactions
-            if (vesselModule.playerControlled)
+        private double GetManeuverNodeHash()
+        {
+            if (vessel.patchedConicSolver != null && vessel.patchedConicSolver.maneuverNodes.Count > 0)
+                return vessel.patchedConicSolver.maneuverNodes[0].DeltaV.magnitude + vessel.patchedConicSolver.maneuverNodes[0].UT;
+            else
+                return 0;
+        }
+
+
+
+        private void UpdateSASState()
+        {
+
+            // Note : don't use FlightGlobals.ActiveVessel.Autopilot.Enabled because it will be set to false on load
+            // despite the SAS toggle being enabled, use the action group instead
+            if (vesselModule.autopilotEnabled != vessel.ActionGroups[KSPActionGroup.SAS])
             {
-                // If navball context is changed from target to orbit/surface, revert parallel/corrected to killrot
-                if (FlightGlobals.speedDisplayMode != SpeedDisplayModes.Target
-                    && vesselModule.autopilotContext == SpeedDisplayModes.Target
-                    && ModeInTargetContextOnly(vesselModule.autopilotMode))
-                {
-                    revertToKillRot = true;
-                    goto EndModeChecks;
-                }
-
-                // If navball context is changed from orbit/surface to target, revert radial/normal to killrot
-                if (FlightGlobals.speedDisplayMode == SpeedDisplayModes.Target
-                    && (vesselModule.autopilotContext == SpeedDisplayModes.Orbit || vesselModule.autopilotContext == SpeedDisplayModes.Surface)
-                    && ModeInOrbSurfContextOnly(vesselModule.autopilotMode))
-                {
-                    revertToKillRot = true;
-                    goto EndModeChecks;
-                }
-            }
-
-            // If target has changed and mode is using target, revert to killrot
-            if (vesselModule.currentTarget != vessel.targetObject && ModeUseTarget(vesselModule.autopilotMode))
-            {
-                revertToKillRot = true;
-                goto EndModeChecks;
-            }
-
-            // If the maneuver node is no more, revert to killrot
-            if (vesselModule.autopilotMode == SASMode.Maneuver && vessel.patchedConicSolver.maneuverNodes.Count < 1)
-            {
-                revertToKillRot = true;
-                goto EndModeChecks;
-            }
-            // Check if maneuver node has changed
-            // TODO: this doesn't work if maneuver is changed in the negative range, maybe remobe Math.Abs ?
-            if (vessel.patchedConicSolver != null
-                && vessel.patchedConicSolver.maneuverNodes.Count > 0 
-                && vesselModule.hasManeuverNode
-                && (Math.Abs(vessel.patchedConicSolver.maneuverNodes[0].DeltaV.magnitude + vessel.patchedConicSolver.maneuverNodes[0].UT) - Math.Abs(maneuverNodeHash) > 0.05))
-            {
-                revertToKillRot = true;
-                goto EndModeChecks;
-            }
-
-            EndModeChecks:
-
-            // Save Context and enabled status (stock UI interaction)
- 
-            if (vesselModule.playerControlled)
-            {
-                vesselModule.autopilotContext = FlightGlobals.speedDisplayMode;
-                // Note : don't use FlightGlobals.ActiveVessel.Autopilot.Enabled because it will be set to false on load
-                // despite the SAS toggle being enabled, use the action group instead
+                Debug.Log("[MRCS] [" + vessel.vesselName + "] : SAS enabled status has changed");
                 vesselModule.autopilotEnabled = vessel.ActionGroups[KSPActionGroup.SAS];
+                ResetToKillRot();
             }
-            // Save current target
-            vesselModule.currentTarget = vessel.targetObject;
-            // Save maneuver node
-            vesselModule.hasManeuverNode = vessel.patchedConicSolver != null && vessel.patchedConicSolver.maneuverNodes.Count > 0;
-            if (vesselModule.hasManeuverNode)
+
+            // Stock context and target state isn't reliable when loading, even if FlightGlobals.ready is true
+            // because the stock target field is restored from the confignode by a coroutine.
+            // It's the same for FlightGlobals.speedDisplayMode, it will be set to surface at load, and then changed a few dozen frames later.
+            if (vesselModule.currentState == VesselState.PackedReady || vesselModule.currentState == VesselState.PhysicsReady)
             {
-                maneuverNodeHash = vessel.patchedConicSolver.maneuverNodes[0].DeltaV.magnitude + vessel.patchedConicSolver.maneuverNodes[0].UT;
+                // Maneuver nodes changes checks don't use the UI state so it is safe to always check for it
+
+                // Target checks don't use the UI state, but we should not reset the SpeedDisplayModes of non-controlled vessels
+                if (!vesselModule.vesselTargetDirty && vesselModule.playerControlled && vesselModule.currentTarget != FlightGlobals.fetch.VesselTarget)
+                {
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] : target has changed, Old Target = " + vesselModule.currentTarget + ", New Target = " + vessel.targetObject);
+                    vesselModule.SetTarget(vessel.targetObject, false, true);
+
+                    // Enforce context change
+                    if (vessel.targetObject == null && vesselModule.autopilotContext == SpeedDisplayModes.Target)
+                    {
+                        vesselModule.SetContext(SpeedDisplayModes.Orbit, vesselModule.playerControlled, true);
+                    }
+                    // Reset SAS mode
+                    if (ModeUseTarget(vesselModule.autopilotMode))
+                    {
+                        ResetToKillRot();
+                    }
+                }
+
+                // Should not happen but better safe than sorry
+                if (vesselModule.currentTarget == null && ModeUseTarget(vesselModule.autopilotMode))
+                {
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] Warning : autopilot mode was relative to target but target is null !");
+                    ResetToKillRot();
+                }
+
+                // Here we handle UI SpeedDisplayModes changes, so it's only for the controlled vessel
+                // Note : FlightGlobals.speedDisplayMode seems to be valid on early load frames, even if FlightGlobals aren't ready
+                if (!vesselModule.vesselTargetDirty && vesselModule.playerControlled && vesselModule.autopilotContext != FlightGlobals.speedDisplayMode)
+                {
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] : Context has changed, Old Context = " + vesselModule.autopilotContext + ", New Context = " + FlightGlobals.speedDisplayMode);
+                    // If navball context is changed from target to orbit/surface, revert parallel/corrected to killrot
+                    if (vesselModule.autopilotContext == SpeedDisplayModes.Target
+                        && ModeInTargetContextOnly(vesselModule.autopilotMode))
+                    {
+                        ResetToKillRot();
+                    }
+                    // If navball context is changed from orbit/surface to target, revert radial/normal to killrot
+                    else if (vesselModule.autopilotContext != SpeedDisplayModes.Target
+                        && ModeInOrbSurfContextOnly(vesselModule.autopilotMode))
+                    {
+                        ResetToKillRot();
+                    }
+                    // Save new context
+                    vesselModule.autopilotContext = FlightGlobals.speedDisplayMode;
+                }
+
+                
+                if (vesselModule.autopilotMode == SASMode.Maneuver)
+                {
+                    // If the maneuver node is no more, revert to killrot
+                    if (!vesselModule.VesselHasManeuverNode())
+                    {
+                        Debug.Log("[MRCS] [" + vessel.vesselName + "] : Node has changed");
+                        ResetToKillRot();
+                    }
+                    // Also check if the node has changed
+                    else
+                    {
+                        double newHash = GetManeuverNodeHash();
+                        if (newHash - maneuverNodeHash > 0.01 || newHash - maneuverNodeHash < -0.01)
+                        {
+                            Debug.Log("[MRCS] [" + vessel.vesselName + "] : Node has changed");
+                            ResetToKillRot();
+                            maneuverNodeHash = 0;
+                        }
+                        maneuverNodeHash = newHash;
+                    }
+                }
+
+                // Check if velocity is enough for the veolicty related modes to be active
+                vesselModule.hasVelocity = FlightGlobals.GetDisplayVelocity().magnitude > 0.5f;
+                if (ModeUseVelocity(vesselModule.autopilotMode))
+                {
+                    if (!vesselModule.hasVelocity)
+                    {
+                        ResetToKillRot();
+                    }
+                }
             }
-            
-            return revertToKillRot;
+
+
         }
 
         private Vector3d GetDirectionVector()
@@ -179,9 +213,9 @@ namespace MandatoryRCS
                         return vesselModule.autopilotMode == SASMode.Prograde ? vessel.srf_velocity.normalized : (-vessel.srf_velocity).normalized;
                     else // Target prograde
                     {
-                        if (vessel.targetObject != null)
+                        if (vesselModule.currentTarget != null)
                         {
-                            Vector3d velocity = vessel.obt_velocity - vessel.targetObject.GetObtVelocity();
+                            Vector3d velocity = vessel.obt_velocity - vesselModule.currentTarget.GetObtVelocity();
                             return vesselModule.autopilotMode == SASMode.Prograde ? velocity.normalized : (-velocity).normalized;
                         }
                     }
@@ -202,28 +236,28 @@ namespace MandatoryRCS
                     if (vessel.patchedConicSolver.maneuverNodes.Count < 1) break;
                     return vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(vessel.orbit).normalized;
                 case SASMode.Target:
-                    if (vessel.targetObject == null) break;
-                    return (vessel.targetObject.GetTransform().position - vessel.transform.position).normalized;
+                    if (vesselModule.currentTarget == null) break;
+                    return (vesselModule.currentTarget.GetTransform().position - vessel.transform.position).normalized;
                 case SASMode.AntiTarget:
-                    if (vessel.targetObject == null) break;
-                    return (vessel.transform.position - vessel.targetObject.GetTransform().position).normalized;
+                    if (vesselModule.currentTarget == null) break;
+                    return (vessel.transform.position - vesselModule.currentTarget.GetTransform().position).normalized;
                 case SASMode.Parallel:
                 case SASMode.AntiParallel:
-                    if (vessel.targetObject == null) break;
+                    if (vesselModule.currentTarget == null) break;
                     Vector3d direction;
 
-                    if (vessel.targetObject is ModuleDockingNode)
-                        direction = vessel.targetObject.GetTransform().forward.normalized;
+                    if (vesselModule.currentTarget is ModuleDockingNode)
+                        direction = vesselModule.currentTarget.GetTransform().forward.normalized;
                     else
-                        direction = vessel.targetObject.GetTransform().up.normalized;
+                        direction = vesselModule.currentTarget.GetTransform().up.normalized;
 
                     return vesselModule.autopilotMode == SASMode.Parallel ? direction.normalized : (-direction).normalized;
                 case SASMode.ProgradeCorrected:
                 case SASMode.RetrogradeCorrected:
                     //TODO : this doesn't work well
-                    if (vessel.targetObject == null) return vessel.ReferenceTransform.up.normalized;
-                    Vector3 targetDirInv = vessel.transform.position - vessel.targetObject.GetTransform().position;
-                    Vector3 targetRelVel = vessel.GetObtVelocity() - vessel.targetObject.GetObtVelocity();
+                    if (vesselModule.currentTarget == null) return vessel.ReferenceTransform.up.normalized;
+                    Vector3 targetDirInv = vessel.transform.position - vesselModule.currentTarget.GetTransform().position;
+                    Vector3 targetRelVel = vessel.GetObtVelocity() - vesselModule.currentTarget.GetObtVelocity();
 
                     Vector3 correction = Vector3.ProjectOnPlane(-targetRelVel,targetDirInv);
 
@@ -276,24 +310,24 @@ namespace MandatoryRCS
                 || vesselModule.autopilotMode == SASMode.Target
                 || vesselModule.autopilotMode == SASMode.AntiTarget)
             {
-                if (vessel.targetObject is ModuleDockingNode)
+                if (vesselModule.currentTarget is ModuleDockingNode)
                 {
-                    rollRef = vessel.targetObject.GetTransform().up;
+                    rollRef = vesselModule.currentTarget.GetTransform().up;
                 }
-                else if (vessel.targetObject is CelestialBody)
+                else if (vesselModule.currentTarget is CelestialBody)
                 {
                     if (vesselModule.autopilotMode == SASMode.Parallel || vesselModule.autopilotMode == SASMode.AntiParallel)
                     {
-                        rollRef = Vector3.Cross(vessel.targetObject.GetTransform().position - vessel.ReferenceTransform.position, vessel.targetObject.GetTransform().up);
+                        rollRef = Vector3.Cross(vesselModule.currentTarget.GetTransform().position - vessel.ReferenceTransform.position, vesselModule.currentTarget.GetTransform().up);
                     }
                     else
                     {
-                        rollRef = vessel.targetObject.GetTransform().up;
+                        rollRef = vesselModule.currentTarget.GetTransform().up;
                     }
                 }
                 else
                 {
-                    rollRef = -vessel.targetObject.GetTransform().forward;
+                    rollRef = -vesselModule.currentTarget.GetTransform().forward;
                 }
             }
             else
@@ -331,7 +365,7 @@ namespace MandatoryRCS
             switch (vesselModule.autopilotMode)
             {
                 case SASMode.Hold:
-                    if (!vesselModule.pilotIsIdle)
+                    if (vesselModule.pilotRotationInput)
                     {
                         vesselModule.flyByWire = false;
                         KeepCurrentAttitude();
@@ -402,24 +436,51 @@ namespace MandatoryRCS
 
         public override void ComponentUpdate()
         {
+
+
             // All this isn't called for unloaded vessels
-            if (vesselModule.currentState == VesselState.Unloaded) { return; }
+            if (vesselModule.currentState == VesselState.Unloaded) return;
 
             // Update pilotIsIdle here because if mode == flybywire we may reset the ctrlState values
-            if (vesselModule.currentState == VesselState.InPhysics && vesselModule.flightCtrlState != null) 
+            if (vesselModule.currentState == VesselState.PhysicsReady && vesselModule.flightCtrlState != null) 
             {
-                vesselModule.pilotIsIdle = vesselModule.flightCtrlState.isIdle;
+                if (vesselModule.flightCtrlState.isIdle)
+                {
+                    vesselModule.pilotRotationInput = false;
+                    vesselModule.pilotTranslationInput = false;
+                }
+                else if (vesselModule.flightCtrlState.X == 0 && vesselModule.flightCtrlState.Y == 0 && vesselModule.flightCtrlState.Z == 0)
+                {
+                    vesselModule.pilotRotationInput = true;
+                    vesselModule.pilotTranslationInput = false;
+                }
+                else
+                {
+                    vesselModule.pilotRotationInput = false;
+                    vesselModule.pilotTranslationInput = true;
+                }
             }
             else
             {
-                vesselModule.pilotIsIdle = true;
+                vesselModule.pilotRotationInput = false;
+                vesselModule.pilotTranslationInput = false;
             }
 
-            // Update SAS mode, context and target then reset to KillRot if necessary
-            if (UpdateTargetAndModeAndContext())
-            {
-                vesselModule.autopilotMode = SASMode.KillRot;
-            }
+            // Sequence on scene load :
+            // - In the vesselModule, on load we set the currentTarget from the targetInfo saved state
+            // - If state = packedfirstframe, we restore the
+            //UpdateTargetOnLoad();
+
+            // Don't update anything else in physics loading state, because SAS state isn't reliable at this time
+            if (vesselModule.currentState == VesselState.PhysicsNotReady) return;
+
+            // Check the validity of current SAS mode/context and react to possible stock UI interactions :
+            // - SAS enabled/disabled
+            // - Target changed
+            // - Maneuver node changed
+            // - Navball context changed
+            // - Velocity becoming very low
+            UpdateSASState();
 
             // Get direction vector
             vesselModule.autopilotDirectionWanted = GetDirectionVector();
@@ -434,7 +495,7 @@ namespace MandatoryRCS
             vesselModule.autopilotDirectionWanted = vesselModule.autopilotDirectionWanted.normalized;
 
             // Checking if the timewarping / persistent hold mode should be enabled
-            if (vesselModule.currentState == VesselState.InPhysics)
+            if (vesselModule.currentState == VesselState.PhysicsReady)
             {
                 if (vessel.Autopilot.Enabled
                     && vesselModule.autopilotMode != SASMode.KillRot

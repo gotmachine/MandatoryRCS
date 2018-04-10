@@ -9,6 +9,8 @@ using System.Linq;
 using UnityEngine;
 using static FlightGlobals;
 using static MandatoryRCS.ComponentSASAttitude;
+using static MandatoryRCS.VesselModuleMandatoryRCS;
+using static MandatoryRCS.UI.UISprites;
 
 namespace MandatoryRCS.UI
 {
@@ -18,102 +20,6 @@ namespace MandatoryRCS.UI
         #region Mode conversion dicts
         private Dictionary<SASMode, SASMarkerToggle> modeToToggle = new Dictionary<SASMode, SASMarkerToggle>();
         private Dictionary<SASMarkerToggle, SASMode> toggleToMode = new Dictionary<SASMarkerToggle, SASMode>();
-        #endregion
-
-        #region Sprites
-        // Overlays
-        Sprite spriteOnLocked;
-        Sprite spriteOnNotLocked;
-        Sprite spriteOff;
-        // Markers
-        Sprite spriteHold;
-        Sprite spriteFlyByWire;
-        Sprite spriteManeuver;
-        Sprite spriteKillRot;
-        Sprite spriteTarget;
-        Sprite spriteAntiTarget;
-        Sprite spritePrograde;
-        Sprite spriteRetrograde;
-        Sprite spriteNormal;
-        Sprite spriteAntiNormal;
-        Sprite spriteRadialIn;
-        Sprite spriteRadialOut;
-        Sprite spriteProgradeCorrected;
-        Sprite spriteRetrogradeCorrected;
-        Sprite spriteParallel;
-        Sprite spriteAntiParallel;
-        // Roll markers
-        Sprite spriteFreeRoll;
-        Sprite spriteRollRight;
-        Sprite spriteRollLeft;
-        Sprite spriteRoll0;
-        Sprite spriteRoll45N;
-        Sprite spriteRoll90N;
-        Sprite spriteRoll135N;
-        Sprite spriteRoll45;
-        Sprite spriteRoll90;
-        Sprite spriteRoll135;
-        Sprite spriteRoll180;
-        // Other markers
-        Sprite spriteRCSAuto;
-        Sprite spriteSun;
-        Sprite spriteVel0;
-        Sprite spriteVel1;
-        Sprite spriteVel2;
-        Sprite spriteVel3;
-        Sprite spriteVel4;
-        Sprite spriteVel5;
-        Sprite spriteVel6;
-        // NavBall markers
-        Sprite spriteFlyByWireNavBall;
-
-        private void GetSprites()
-        {
-            spriteOnLocked            = UILib.GetSprite("OVERLAY_GREEN");
-            spriteOnNotLocked         = UILib.GetSprite("OVERLAY_YELLOW");
-            spriteOff                 = UILib.GetSprite("OVERLAY_RED");
-            // Markers
-            spriteHold                = UILib.GetSprite("HOLDSMOOTH");
-            spriteFlyByWire           = UILib.GetSprite("FLYBYWIRE");
-            spriteManeuver            = UILib.GetSprite("MANEUVER");
-            spriteKillRot             = UILib.GetSprite("KILLROT");
-            spriteTarget              = UILib.GetSprite("TARGET");
-            spriteAntiTarget          = UILib.GetSprite("ANTITARGET");
-            spritePrograde            = UILib.GetSprite("PROGRADE");
-            spriteRetrograde          = UILib.GetSprite("RETROGRADE");
-            spriteNormal              = UILib.GetSprite("NORMAL");
-            spriteAntiNormal          = UILib.GetSprite("ANTINORMAL");
-            spriteRadialIn            = UILib.GetSprite("RADIAL_IN");
-            spriteRadialOut           = UILib.GetSprite("RADIAL_OUT");
-            spriteProgradeCorrected   = UILib.GetSprite("PROGRADE_CORRECTED");
-            spriteRetrogradeCorrected = UILib.GetSprite("RETROGRADE_CORRECTED");
-            spriteParallel            = UILib.GetSprite("PARALLEL");
-            spriteAntiParallel        = UILib.GetSprite("ANTIPARALLEL");
-            // Roll markers
-            spriteFreeRoll            = UILib.GetSprite("FREE_ROLL");
-            spriteRollRight           = UILib.GetSprite("ROLL_RIGHT");
-            spriteRollLeft            = UILib.GetSprite("ROLL_LEFT");
-            spriteRoll0               = UILib.GetSprite("ROT0");
-            spriteRoll45N             = UILib.GetSprite("ROT-45");
-            spriteRoll90N             = UILib.GetSprite("ROT-90");
-            spriteRoll135N            = UILib.GetSprite("ROT-135");
-            spriteRoll45              = UILib.GetSprite("ROT45");
-            spriteRoll90              = UILib.GetSprite("ROT90");
-            spriteRoll135             = UILib.GetSprite("ROT135");
-            spriteRoll180             = UILib.GetSprite("ROT180");
-            // Other markers
-            spriteRCSAuto             = UILib.GetSprite("RCSAUTO");
-            spriteSun                 = UILib.GetSprite("SUN");
-            spriteVel0                = UILib.GetSprite("VEL0");
-            spriteVel1                = UILib.GetSprite("VEL1");
-            spriteVel2                = UILib.GetSprite("VEL2");
-            spriteVel3                = UILib.GetSprite("VEL3");
-            spriteVel4                = UILib.GetSprite("VEL4");
-            spriteVel5                = UILib.GetSprite("VEL5");
-            spriteVel6                = UILib.GetSprite("VEL6");
-            // NavBall markers
-            spriteFlyByWireNavBall    = UILib.GetSprite("FLYBYWIRE_NAV");
-        }
         #endregion
 
         #region Toggles and buttons
@@ -153,33 +59,20 @@ namespace MandatoryRCS.UI
         private GameObject navBallVectorsPivot; // Parent transform for the navball markers
         private GameObject SAS; // SAS toggle
         private GameObject RCS; // RCS toggle
-                                //private GameObject stability;
-                                //private GameObject maneuver;
-                                //private GameObject prograde;
-                                //private GameObject retrograde;
-                                //private GameObject normal;
-                                //private GameObject antinormal;
-                                //private GameObject radial;
-                                //private GameObject antiradial;
-                                //private GameObject target;
-                                //private GameObject antitarget;
         #endregion
 
         #region UI state vars
         private bool guiInitialized = false;
         private bool guiEnabled = true;
         private SASMode currentMode;
-        private SpeedDisplayModes currentContext;
-        private bool lockedRollMode = false;
+        private SpeedDisplayModes currentContext = SpeedDisplayModes.Target;
+        private bool lockedRollMode = true;
         private int currentRoll = 0;
-        private bool rcsAutoMode = false;
         private int velocityLimiter = 15;
-        private bool sunIsTarget = false;
-        //private bool vesselHasChanged = false;
 
-        private bool targetMarkersActive;
-        private bool maneuverMarkerActive;
-        private bool velocityMarkersActive;
+        private bool hasTarget = true;
+        private bool hasManeuver = true;
+        private bool hasVelocity = true;
         #endregion
 
         // Reference to the currently piloted vessel
@@ -194,55 +87,22 @@ namespace MandatoryRCS.UI
 
         private void Start()
         {
-            GetSprites();
             GameEvents.onVesselSwitching.Add(onVesselSwitching);
+            GameEvents.onVesselReferenceTransformSwitch.Add(OnVesselReferenceTransformSwitch);
         }
 
         private void OnDestroy()
         {
             GameEvents.onVesselSwitching.Remove(onVesselSwitching);
+            GameEvents.onVesselReferenceTransformSwitch.Remove(OnVesselReferenceTransformSwitch);
         }
 
-        // TODO : on scene load, there is a noticeable delay
-        private void LateUpdate()
+        private void OnVesselReferenceTransformSwitch(Transform from, Transform to)
         {
-            // On scene load, gui will be initialized before 
-            if (!FlightGlobals.ready 
-                || FlightGlobals.ActiveVessel == null
-                || FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleMandatoryRCS>().Count() == 0
-                || !FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleMandatoryRCS>().First().ready)
+            if (guiInitialized && Vector3.Angle(from.up, to.up) > 5)
             {
-                return;
+
             }
-
-            // Initialize the whole thing the first time
-            if (!guiInitialized)
-            {
-                guiInitialized = CreateUI();
-                if (!guiInitialized) return;
-            }
-
-            // Update navball markers
-            UpdateFlyByWireMarker();
-
-            // Hide/show the panel according to SAS enabled state
-            if (vesselModule.autopilotEnabled != guiEnabled)
-            {
-                guiEnabled = vesselModule.autopilotEnabled;
-                mainButtonPanel.SetActive(guiEnabled);
-                SetMode(SASMode.KillRot, true, true);
-            }
-
-            if (!guiEnabled) return;
-            // Check if something has changed and update the UI
-            // Note : ComponentSASAttitude should be responsible for all changes
-            UpdateUIFromVesselModule();
-
-            SetManeuverMarkersActive(vesselModule.hasManeuverNode);
-            SetTargetMarkersActive(vesselModule.currentTarget != null);
-            SetVelocityMarkersActive(FlightGlobals.GetDisplaySpeed() > 0.1);
-            SetRollModeActive();
-            UpdateLockStatus();
         }
 
         // Detect active vessel change when switching vessel in the physics bubble
@@ -255,28 +115,288 @@ namespace MandatoryRCS.UI
                 //autopilotUI.UpdateUIState();
             }
         }
+
+        private void LateUpdate()
+        {
+            // Get references to the navball GameObjects, if they are still null abort
+            if (navBall == null)
+            {
+                navBall = FindObjectOfType<NavBall>();
+                if (navBall == null) return;
+
+                navballFrame = navBall.gameObject.transform.parent.parent.gameObject;
+                collapseGroup = navballFrame.gameObject.GetChild("IVAEVACollapseGroup");
+                autoPilotModes = navballFrame.gameObject.GetChild("AutopilotModes");
+                navBallVectorsPivot = navballFrame.gameObject.GetChild("NavBallVectorsPivot");
+                SAS = navballFrame.gameObject.GetChild("SAS");
+                RCS = navballFrame.gameObject.GetChild("RCS");
+
+                // Disable the stock markers
+                autoPilotModes.SetActive(false);
+            }
+
+            // Initialize the whole thing the first time
+            if (!guiInitialized)
+            {
+                guiInitialized = CreateUI();
+                if (!guiInitialized) return;
+            }
+
+            // Abort if the vesselModule isn't ready
+            // TODO : this won't work, we need to handle the user input when the vessel is packed / timewarping. --> Ok ?
+            if (vesselModule == null || !(vesselModule.currentState == VesselState.PhysicsReady || vesselModule.currentState == VesselState.PackedReady))
+                return;
+
+            // It seems that disabling the autopilot also disable the stock code that revert 
+            // back to the orbit speedDisplayMode if the target is null
+            //if (vesselModule.currentTarget == null && FlightGlobals.speedDisplayMode == SpeedDisplayModes.Target)
+            //    FlightGlobals.SetSpeedMode(SpeedDisplayModes.Orbit);
+            // -> NOW DONE IN SASATTITUDE
+
+            // Update navball direction marker
+            UpdateFlyByWireMarker();
+
+            // Hide/show the whole SAS panel according to SAS button state
+            if (vesselModule.autopilotEnabled != mainButtonPanel.activeInHierarchy)
+            {
+                guiEnabled = vesselModule.autopilotEnabled;
+                mainButtonPanel.SetActive(guiEnabled);
+            }
+
+            // has the context changed ?
+            if (vesselModule.autopilotContext != currentContext)
+                ApplyContextVisibilityRule(vesselModule.autopilotContext);
+
+            // Do we still have a target ?
+            if (vesselModule.currentTarget == null && hasTarget)
+                ApplyTargetVisibilityRule(false);
+
+            else if (vesselModule.currentTarget != null && !hasTarget)
+                ApplyTargetVisibilityRule(true);
+
+            // Do we have a maneuver node ?
+            if (vesselModule.VesselHasManeuverNode() != maneuver.GetActive())
+                maneuver.SetActive(vesselModule.VesselHasManeuverNode());
+
+            // should velocity modes be enabled ?
+            if (vesselModule.hasVelocity != hasVelocity)
+                ApplyVelocityVisibilityRule(vesselModule.hasVelocity);
+
+            // has the mode changed ?
+            if (vesselModule.autopilotMode != currentMode)
+                ChangeMode(vesselModule.autopilotMode);
+
+            // has the roll mode changed ?
+            if (vesselModule.lockedRollMode != lockedRollMode)
+                SetRollLock(vesselModule.lockedRollMode);
+
+            // should the freeroll button be enabled ?
+            if (vesselModule.isRollRefDefined != freeRoll.GetActive())
+                SetRollLock(false, !vesselModule.isRollRefDefined);
+
+            // Has the velocity limiter value changed ?
+            if (vesselModule.velocityLimiter != velocityLimiter)
+                CycleVelocityLimiter(false, vesselModule.velocityLimiter);
+
+            // Is the sun our target ?
+            if (!sunTarget.GetToggleState() && vesselModule.currentTarget == (ITargetable)Sun.Instance.sun)
+                sunTarget.SetToggleState(true, false);
+
+            else if (sunTarget.GetToggleState() && vesselModule.currentTarget != (ITargetable)Sun.Instance.sun)
+                sunTarget.SetToggleState(false, false);
+
+            // Should RCS auto mode be enabled ?
+            if (rcsAuto.GetToggleState() != vesselModule.rcsAutoMode)
+                rcsAuto.SetToggleState(vesselModule.rcsAutoMode, false);
+
+            UpdateLockStatus();
+
+        }
+
+        private void CycleVelocityLimiter(bool updateModuleValue, int value = -1)
+        {
+            // Force value if required
+            if (value != -1)
+            {
+                velocityLimiter = value;
+            }
+            // Cycle trough possible values
+            else
+            {
+                velocityLimiter += 3;
+                if (velocityLimiter > 24) velocityLimiter = 6;
+            }
+
+            // Update symbol + value sanity check
+            switch (velocityLimiter)
+            {
+                case 6: velLimiter.SetSprite(spriteVel0); break;
+                case 9: velLimiter.SetSprite(spriteVel1); break;
+                case 12: velLimiter.SetSprite(spriteVel2); break;
+                case 15: velLimiter.SetSprite(spriteVel3); break;
+                case 18: velLimiter.SetSprite(spriteVel4); break;
+                case 21: velLimiter.SetSprite(spriteVel5); break;
+                case 24: velLimiter.SetSprite(spriteVel6); break;
+                default:
+                    velocityLimiter = 15;
+                    velLimiter.SetSprite(spriteVel3);
+                    break;
+            }
+
+            if (updateModuleValue) vesselModule.velocityLimiter = velocityLimiter;
+        }
+
+        private void SetRollLock(bool state, bool setInactive = false)
+        {
+            lockedRollMode = state;
+            freeRoll.SetToggleState(state, false);
+            freeRoll.SetActive(!setInactive);
+            rollRight.SetActive(state);
+            rollLeft.SetActive(state);
+            if (setInactive) state = false;
+            SetRollAngle(true, state ? 0 : -1);
+        }
+
+        private void SetRollAngle(bool updateModuleValue, int rollAngle = -1)
+        {
+            switch (rollAngle)
+            {
+                case 0:
+                    freeRoll.SetSymbolSprite(spriteRoll0);
+                    break;
+                case 45:
+                    freeRoll.SetSymbolSprite(spriteRoll45);
+                    break;
+                case 90:
+                    freeRoll.SetSymbolSprite(spriteRoll90);
+                    break;
+                case 135:
+                    freeRoll.SetSymbolSprite(spriteRoll135);
+                    break;
+                case 180:
+                    freeRoll.SetSymbolSprite(spriteRoll180);
+                    break;
+                case 225:
+                    freeRoll.SetSymbolSprite(spriteRoll135N);
+                    break;
+                case 270:
+                    freeRoll.SetSymbolSprite(spriteRoll90N);
+                    break;
+                case 315:
+                    freeRoll.SetSymbolSprite(spriteRoll45N);
+                    break;
+                default:
+                    freeRoll.SetSymbolSprite(spriteFreeRoll);
+                    rollAngle = 0;
+                    break;
+            }
+
+            currentRoll = rollAngle;
+
+            if (updateModuleValue)
+            {
+                vesselModule.currentRoll = currentRoll;
+                vesselModule.autopilotModeHasChanged = true;
+            }
+        }
+
+        private void UpdateFlyByWireMarker()
+        {
+            if (vesselModule.autopilotMode == SASMode.FlyByWire || vesselModule.autopilotMode == SASMode.Hold)
+            {
+                if (!autopilotDirection.IsVisible())
+                    autopilotDirection.SetVisible(true);
+
+                autopilotDirection.Update(vesselModule.autopilotDirectionWanted);
+            }
+            else if (autopilotDirection.IsVisible())
+            {
+                autopilotDirection.SetVisible(false);
+            }
+        }
+
+        private void UpdateLockStatus()
+        {
+            SASMarkerToggle toggle;
+            modeToToggle.TryGetValue(currentMode, out toggle);
+            toggle.UpdateLockState(vesselModule.rwLockedOnDirection);
+        }
+
+        private void ApplyContextVisibilityRule(SpeedDisplayModes newContext)
+        {
+            if (newContext == SpeedDisplayModes.Target || currentContext == SpeedDisplayModes.Target)
+            {
+                bool istarget = newContext == SpeedDisplayModes.Target;
+
+                progradeCorrected.SetVisible(istarget);
+                retrogradeCorrected.SetVisible(istarget);
+                parallel.SetVisible(istarget);
+                antiParallel.SetVisible(istarget);
+
+                normal.SetVisible(!istarget);
+                antiNormal.SetVisible(!istarget);
+                radialIn.SetVisible(!istarget);
+                radialOut.SetVisible(!istarget);
+            }
+            currentContext = newContext;
+        }
+
+        private void ApplyTargetVisibilityRule(bool hasTarget)
+        {
+            this.hasTarget = hasTarget;
+            target.SetActive(hasTarget);
+            antiTarget.SetActive(hasTarget);
+            progradeCorrected.SetActive(hasTarget);
+            retrogradeCorrected.SetActive(hasTarget);
+            parallel.SetActive(hasTarget);
+            antiParallel.SetActive(hasTarget);
+        }
+
+        private void ApplyVelocityVisibilityRule(bool hasVelocity)
+        {
+            this.hasVelocity = hasVelocity;
+            prograde.SetActive(hasVelocity);
+            retrograde.SetActive(hasVelocity);
+            progradeCorrected.SetActive(hasVelocity);
+            retrogradeCorrected.SetActive(hasVelocity);
+        }
+
+        private void ChangeMode(SASMode newMode)
+        {
+            // Disable previously enabled toggle
+            SASMarkerToggle oldToggle;
+            if (modeToToggle.TryGetValue(currentMode, out oldToggle))
+            {
+                oldToggle.SetToggleState(false, false);
+            }
+
+            // And enable the new one
+            SASMarkerToggle newToggle;
+            modeToToggle.TryGetValue(newMode, out newToggle);
+            newToggle.SetToggleState(true, false);
+
+            // Update UI state var
+            currentMode = newMode;
+        }
+
+
+
+
         #endregion
 
         #region Init
         private bool CreateUI()
         {
-            if (!FlightGlobals.ready || FlightGlobals.ActiveVessel == null) return false;
-            if (FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleMandatoryRCS>().Count() == 0) return false;
+            if (!FlightGlobals.ready || FlightGlobals.ActiveVessel == null)
+                return false;
+            if (FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleMandatoryRCS>().Count() == 0)
+                return false;
 
             // Get a reference to the VesselModule
             vesselModule = FlightGlobals.ActiveVessel.vesselModules.OfType<VesselModuleMandatoryRCS>().First();
 
-            // Get references to the navball GameObjects
-            navBall = FindObjectOfType<NavBall>();
-            navballFrame = navBall.gameObject.transform.parent.parent.gameObject;
-            collapseGroup = navballFrame.gameObject.GetChild("IVAEVACollapseGroup");
-            autoPilotModes = navballFrame.gameObject.GetChild("AutopilotModes");
-            navBallVectorsPivot = navballFrame.gameObject.GetChild("NavBallVectorsPivot");
-            SAS = navballFrame.gameObject.GetChild("SAS");
-            RCS = navballFrame.gameObject.GetChild("RCS");
-
-            // Disable the stock markers
-            autoPilotModes.SetActive(false);
+            if (vesselModule.currentState != VesselModuleMandatoryRCS.VesselState.PhysicsReady)
+                return false;
 
             // Create our main panel
             mainButtonPanel = new GameObject("MRCS_SAS");
@@ -310,17 +430,14 @@ namespace MandatoryRCS.UI
             rcsAuto = new SASMarkerToggle(this, "RCS auto", new Vector2(xoffset + 9 + 50, yoffset - 55), mainButtonPanel, spriteRCSAuto, spriteOff, spriteOnLocked, spriteOnNotLocked);
             velLimiter = new SASMarkerSimple(this, "SAS aggressivity", new Vector2(xoffset + 9 + 0, yoffset - 55), mainButtonPanel, spriteVel3);
 
-            // Create SASMode<>Toggle dictionnaries
+            // Create SASMode<-->Toggle dictionnaries
             CreateDictionnaries();
 
-            // Update UI according to the vesselModule saved state
-            UpdateUIFromVesselModule(true);
-            SetManeuverMarkersActive(vesselModule.hasManeuverNode, true);
-            SetTargetMarkersActive(vesselModule.currentTarget != null, true);
-            SetVelocityMarkersActive(FlightGlobals.GetDisplaySpeed() > 0.1, true);
-            SetRollModeActive(true);
-
             guiEnabled = true;
+
+            // We only need to set mode and context, everything else will be updated in the lateUpdate
+            ChangeMode(vesselModule.autopilotMode);
+            ApplyContextVisibilityRule(vesselModule.autopilotContext);
 
             autopilotDirection = new NavBallvector("autopilotDirection", navBallVectorsPivot, navBall, spriteFlyByWireNavBall, new Color32(30,216,40,255), true);
             UpdateFlyByWireMarker();
@@ -366,129 +483,22 @@ namespace MandatoryRCS.UI
         }
         #endregion
 
-        #region UI logic
-
-        private void UpdateFlyByWireMarker()
-        {
-            if (vesselModule.autopilotMode == SASMode.FlyByWire || vesselModule.autopilotMode == SASMode.Hold)
-            {
-                if (!autopilotDirection.IsVisible())
-                    autopilotDirection.SetVisible(true);
-
-                autopilotDirection.Update(vesselModule.autopilotDirectionWanted);
-            }
-            else if (autopilotDirection.IsVisible())
-            {
-                autopilotDirection.SetVisible(false);
-            }
-        }
-
-        public void UpdateLockStatus()
-        {
-            SASMarkerToggle toggle;
-            modeToToggle.TryGetValue(currentMode, out toggle);
-            toggle.UpdateLockState(vesselModule.rwLockedOnDirection);
-        }
-
-        public void SetTargetMarkersActive(bool active, bool forceUpdate = false)
-        {
-            if (!forceUpdate && targetMarkersActive == active) return;
-            targetMarkersActive = active;
-
-            target.SetActive(active);
-            antiTarget.SetActive(active);
-            progradeCorrected.SetActive(active);
-            retrogradeCorrected.SetActive(active);
-            parallel.SetActive(active);
-            antiParallel.SetActive(active);
-
-            if (!active && (
-                currentMode == SASMode.Target
-                || currentMode == SASMode.AntiTarget
-                || currentMode == SASMode.ProgradeCorrected
-                || currentMode == SASMode.RetrogradeCorrected
-                || currentMode == SASMode.Parallel
-                || currentMode == SASMode.AntiParallel))
-            {
-                SetMode(SASMode.KillRot);
-            }
-        }
-
-        public void SetManeuverMarkersActive(bool active, bool forceUpdate = false)
-        {
-            if (!forceUpdate && maneuverMarkerActive == active) return;
-            maneuverMarkerActive = active;
-
-            maneuver.SetActive(active);
-            if (!active && currentMode == SASMode.Maneuver)
-            {
-                SetMode(SASMode.KillRot);
-            }
-        }
-
-        public void SetVelocityMarkersActive(bool active, bool forceUpdate = false)
-        {
-            if (!forceUpdate && velocityMarkersActive == active) return;
-            velocityMarkersActive = active;
-
-            prograde.SetActive(active);
-            retrograde.SetActive(active);
-            progradeCorrected.SetActive(active);
-            retrogradeCorrected.SetActive(active);
-
-            if (!active && (
-                currentMode == SASMode.Prograde
-                || currentMode == SASMode.Retrograde
-                || currentMode == SASMode.ProgradeCorrected
-                || currentMode == SASMode.RetrogradeCorrected))
-            {
-                SetMode(SASMode.KillRot);
-            }
-        }
-
-        public void SetRollModeActive(bool forceUpdate = false)
-        {
-            if (!forceUpdate && vesselModule.isRollRefDefined == freeRoll.GetActive()) return;
-
-            freeRoll.SetActive(vesselModule.isRollRefDefined);
-        }
-
-
-                    
-
-        #endregion
-
-        #region SAS State update
-
-        private void UpdateUIFromVesselModule(bool forceUpdate = false)
-        {
-            // Set context according to stock state
-            SetContext(vesselModule.autopilotContext, forceUpdate);
-            // Set the active mode
-            SetMode(vesselModule.autopilotMode, false, forceUpdate);
-            // Set roll mode
-            SetRollMode(vesselModule.lockedRollMode, true, vesselModule.currentRoll, false, forceUpdate);
-            // Set velocity limiter state
-            SetVelocityLimiter(true, vesselModule.velocityLimiter, false, forceUpdate);
-            // Set RCS auto mode
-            SetRCSAuto(vesselModule.rcsAutoMode, false, forceUpdate);
-            // Set sun target
-            SetTargetSun(vesselModule.sunIsTarget, false, forceUpdate);
-        }
-
+        #region UI -> VesselModule
         public void ToggleClick(SASMarkerToggle toggle, bool enabled)
         {
             if (toggle == freeRoll)
             {
-                SetRollMode(enabled);
+                vesselModule.lockedRollMode = enabled;
+                SetRollAngle(true, enabled ? 0 : -1);
+                vesselModule.autopilotModeHasChanged = true;
             }
             else if (toggle == rcsAuto)
             {
-                SetRCSAuto(enabled);
+                vesselModule.rcsAutoMode = enabled;
             }
             else if (toggle == sunTarget)
             {
-                SetTargetSun(enabled);
+                vesselModule.SetTarget(enabled ? Sun.Instance.sun : null, true, true);
             }
             else
             {
@@ -498,7 +508,8 @@ namespace MandatoryRCS.UI
 
                 if (newMode != currentMode)
                 {
-                    SetMode(newMode);
+                    vesselModule.autopilotMode = newMode;
+                    vesselModule.autopilotModeHasChanged = true;
                 }
                 else
                 {
@@ -512,16 +523,11 @@ namespace MandatoryRCS.UI
             }
         }
 
-        private void ResetFlyByWire()
-        {
-            throw new NotImplementedException();
-        }
-
         public void ButtonClick(SASMarker button)
         {
             if (button == velLimiter)
             {
-                SetVelocityLimiter();
+                CycleVelocityLimiter(true);
             }
             else if (lockedRollMode)
             {
@@ -530,179 +536,19 @@ namespace MandatoryRCS.UI
                 {
                     newRoll += 45;
                     if (newRoll > 315) newRoll = 0;
-                    SetRollAngle(newRoll);
+                    SetRollAngle(true, newRoll);
                 }
                 if (button == rollLeft)
                 {
                     newRoll -= 45;
                     if (newRoll < 0) newRoll = 315;
-                    SetRollAngle(newRoll);
+                    SetRollAngle(true, newRoll);
                 }
             }
         }
-
-        public void SetContext(SpeedDisplayModes context, bool forceUpdate = true)
-        {
-            if (!forceUpdate && context == currentContext) return;
-
-            bool istarget = (context == SpeedDisplayModes.Target);
-
-            progradeCorrected.SetVisible(istarget);
-            retrogradeCorrected.SetVisible(istarget);
-            parallel.SetVisible(istarget);
-            antiParallel.SetVisible(istarget);
-
-            normal.SetVisible(!istarget);
-            antiNormal.SetVisible(!istarget);
-            radialIn.SetVisible(!istarget);
-            radialOut.SetVisible(!istarget);
-
-            currentContext = context;
-        }
-
-        public void SetMode(SASMode mode, bool updateVesselModule = true, bool forceUpdate = true)
-        {
-            if (!forceUpdate && mode == currentMode) return;
-
-            // Disable previously enabled toggle
-            SASMarkerToggle oldToggle;
-            modeToToggle.TryGetValue(currentMode, out oldToggle);
-            oldToggle.SetToggleState(false, false);
-
-            if (updateVesselModule)
-            {
-                vesselModule.autopilotMode = mode;
-                vesselModule.autopilotModeHasChanged = true;
-            }
-            // Manually set the toggle to disabled state
-            else
-            { 
-                SASMarkerToggle newToggle;
-                modeToToggle.TryGetValue(mode, out newToggle);
-                newToggle.SetToggleState(true, false);
-            }
-            // Update UI state var
-            currentMode = mode;
-        }
-
-        public void SetVelocityLimiter(bool setValue = false, int value = 15, bool updateVesselModule = true, bool forceUpdate = true)
-        {
-            if (!forceUpdate && setValue && value == velocityLimiter) return;
-            if (setValue) { velocityLimiter = value;}
-            // Cycle trough possible values
-            else
-            {
-                velocityLimiter += 3;
-                if (velocityLimiter > 24) velocityLimiter = 6;
-            }
-
-            // Update symbol + value sanity check
-            switch (velocityLimiter)
-            {
-                case 6: velLimiter.SetSprite(spriteVel0); break;
-                case 9: velLimiter.SetSprite(spriteVel1); break;
-                case 12: velLimiter.SetSprite(spriteVel2); break;
-                case 15: velLimiter.SetSprite(spriteVel3); break;
-                case 18: velLimiter.SetSprite(spriteVel4); break;
-                case 21: velLimiter.SetSprite(spriteVel5); break;
-                case 24: velLimiter.SetSprite(spriteVel6); break;
-                default:
-                    velocityLimiter = 15;
-                    velLimiter.SetSprite(spriteVel3);
-                    break;
-            }
-
-            if (updateVesselModule) vesselModule.velocityLimiter = velocityLimiter;
-        }
-
-        public void SetRCSAuto(bool enabled, bool updateVesselModule = true, bool forceUpdate = true)
-        {
-            if (!forceUpdate && enabled == rcsAutoMode) return;
-
-            rcsAutoMode = enabled;
-            rcsAuto.SetToggleState(rcsAutoMode, false);
-
-            if (updateVesselModule) vesselModule.rcsAutoMode = rcsAutoMode;
-        }
-
-        public void SetTargetSun(bool enabled, bool updateVesselModule = true, bool forceUpdate = true)
-        {
-            if (!forceUpdate && enabled == sunIsTarget) return;
-
-            sunIsTarget = enabled;
-            sunTarget.SetToggleState(sunIsTarget, false);
-
-            if (updateVesselModule) vesselModule.sunIsTarget = sunIsTarget;
-        }
-
-        public void SetRollMode(bool enabled, bool setRollAngle = false, int newRollAngle = 0, bool updateVesselModule = true, bool forceUpdate = true)
-        {
-            if (!forceUpdate && enabled == lockedRollMode && setRollAngle && newRollAngle == currentRoll) return;
-
-            lockedRollMode = enabled;
-            rollRight.SetActive(enabled);
-            rollLeft.SetActive(enabled);
-            freeRoll.SetToggleState(enabled, false);
-            // -1 will set the sprite to freeroll
-            SetRollAngle(enabled ? newRollAngle : -1, false, true);
-
-            if (updateVesselModule)
-            {
-                vesselModule.lockedRollMode = lockedRollMode;
-                vesselModule.currentRoll = currentRoll;
-                vesselModule.autopilotModeHasChanged = true;
-            }
-        }
-
-        public void SetRollAngle(int rollAngle, bool updateVesselModule = true, bool forceUpdate = true)
-        {
-            if (!forceUpdate && rollAngle == currentRoll) return;
-
-            switch (rollAngle)
-            {
-                case 0:
-                    freeRoll.SetSymbolSprite(spriteRoll0);
-                    break;
-                case 45:
-                    freeRoll.SetSymbolSprite(spriteRoll45);
-                    break;
-                case 90:
-                    freeRoll.SetSymbolSprite(spriteRoll90);
-                    break;
-                case 135:
-                    freeRoll.SetSymbolSprite(spriteRoll135);
-                    break;
-                case 180:
-                    freeRoll.SetSymbolSprite(spriteRoll180);
-                    break;
-                case 225:
-                    freeRoll.SetSymbolSprite(spriteRoll135N);
-                    break;
-                case 270:
-                    freeRoll.SetSymbolSprite(spriteRoll90N);
-                    break;
-                case 315:
-                    freeRoll.SetSymbolSprite(spriteRoll45N);
-                    break;
-                default:
-                    freeRoll.SetSymbolSprite(spriteFreeRoll);
-                    rollAngle = 0;
-                    break;
-            }
-
-            currentRoll = rollAngle;
-
-            if (updateVesselModule)
-            {
-                vesselModule.currentRoll = currentRoll;
-                vesselModule.autopilotModeHasChanged = true;
-            }
-
-
-        }
         #endregion
+
     }
-
-
-
 }
+
+
