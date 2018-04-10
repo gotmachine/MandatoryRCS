@@ -237,10 +237,10 @@ namespace MandatoryRCS
                     return vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(vessel.orbit).normalized;
                 case SASMode.Target:
                     if (vesselModule.currentTarget == null) break;
-                    return (vesselModule.currentTarget.GetTransform().position - vessel.transform.position).normalized;
+                    return (vesselModule.currentTarget.GetTransform().position - vessel.GetTransform().position).normalized;
                 case SASMode.AntiTarget:
                     if (vesselModule.currentTarget == null) break;
-                    return (vessel.transform.position - vesselModule.currentTarget.GetTransform().position).normalized;
+                    return (vessel.GetTransform().position - vesselModule.currentTarget.GetTransform().position).normalized;
                 case SASMode.Parallel:
                 case SASMode.AntiParallel:
                     if (vesselModule.currentTarget == null) break;
@@ -255,8 +255,8 @@ namespace MandatoryRCS
                 case SASMode.ProgradeCorrected:
                 case SASMode.RetrogradeCorrected:
                     //TODO : this doesn't work well
-                    if (vesselModule.currentTarget == null) return vessel.ReferenceTransform.up.normalized;
-                    Vector3 targetDirInv = vessel.transform.position - vesselModule.currentTarget.GetTransform().position;
+                    if (vesselModule.currentTarget == null) return vessel.GetTransform().up.normalized;
+                    Vector3 targetDirInv = vessel.GetTransform().position - vesselModule.currentTarget.GetTransform().position;
                     Vector3 targetRelVel = vessel.GetObtVelocity() - vesselModule.currentTarget.GetObtVelocity();
 
                     Vector3 correction = Vector3.ProjectOnPlane(-targetRelVel,targetDirInv);
@@ -318,7 +318,7 @@ namespace MandatoryRCS
                 {
                     if (vesselModule.autopilotMode == SASMode.Parallel || vesselModule.autopilotMode == SASMode.AntiParallel)
                     {
-                        rollRef = Vector3.Cross(vesselModule.currentTarget.GetTransform().position - vessel.ReferenceTransform.position, vesselModule.currentTarget.GetTransform().up);
+                        rollRef = Vector3.Cross(vesselModule.currentTarget.GetTransform().position - vessel.GetTransform().position, vesselModule.currentTarget.GetTransform().up);
                     }
                     else
                     {
@@ -409,7 +409,7 @@ namespace MandatoryRCS
                     float yawInput = vesselModule.flightCtrlState.yaw;
                     // Update direction with pitch and yaw input
 
-                    vesselModule.autopilotDirectionWanted += vessel.ReferenceTransform.rotation * new Vector3(yawInput * TimeWarp.fixedDeltaTime * 0.5f, 0, -pitchInput * TimeWarp.fixedDeltaTime * 0.5f);
+                    vesselModule.autopilotDirectionWanted += vessel.GetTransform().rotation * new Vector3(yawInput * 0.01f, 0, -pitchInput * 0.01f);
                     vesselModule.autopilotAttitudeWanted = Quaternion.LookRotation(vesselModule.autopilotDirectionWanted, rollRef);
                     // Reset pitch and yaw input
                     vesselModule.flightCtrlState.pitch = 0;

@@ -19,7 +19,6 @@ namespace MandatoryRCS
         #region Vessel state
         public enum VesselState
         {
-            
             PhysicsNotReady,
             PhysicsVelocityFrame,
             PhysicsReady,
@@ -83,13 +82,15 @@ namespace MandatoryRCS
         public bool hasSAS = false;
 
         #endregion
-
+        // TODO : check that we reset the direction lock when reset the SAS mode from the target handling code
         public bool rwLockedOnDirection;
-
         public bool ready = false;
         public int loadingFrameNumber = 0;
         private bool callbackFirstFrameSkipped = false;
 
+        // Target info
+        // TODO : investigate the "target offset" between our calculated direction and the navball direction
+        // Porbably has something to do with targetting modes (
         [KSPField(isPersistant = true)]
         public ProtoTargetInfo targetInfo = new ProtoTargetInfo();
         public ITargetable currentTarget;
@@ -180,6 +181,7 @@ namespace MandatoryRCS
             // and get the requested direction and attitude
             if (autopilotModeHasChanged || !hasSAS) autopilotPersistentModeLock = false;
             if (hasSAS) sasAttitude.ComponentUpdate();
+
 
             //Debug.Log(vessel.name + " - packed ? " + vessel.packed + "V");
             //Debug.Log("dirWan = " + autopilotDirectionWanted.x + "/" + autopilotDirectionWanted.y + "/" + autopilotDirectionWanted.z);
