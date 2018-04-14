@@ -121,7 +121,7 @@ namespace MandatoryRCS.Lib
                                 }
                                 Vector3d thrusterThrust = thrustDirection * power;
                                 Vector3d thrusterTorque = Vector3.Cross(thrusterPosition, thrusterThrust);
-                                rcsTorqueAvailable.Add(Vector3.Scale(vessel.GetTransform().InverseTransformDirection(thrusterTorque), attitudeControl));
+                                rcsTorqueAvailable.Add(Vector3.Scale(vessel.vesselTransform.InverseTransformDirection(thrusterTorque), attitudeControl));
                             }
                         }
                     }

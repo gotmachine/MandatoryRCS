@@ -20,5 +20,8 @@ namespace MandatoryRCS
         public virtual void ComponentUpdate()
         {
         }
+        public virtual void ComponentFixedUpdate()
+        {
+        }
     }
 }

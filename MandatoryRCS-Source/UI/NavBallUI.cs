@@ -307,7 +307,7 @@ namespace MandatoryRCS.UI
                 if (!autopilotDirection.IsVisible())
                     autopilotDirection.SetVisible(true);
 
-                autopilotDirection.Update(vesselModule.autopilotDirectionWanted);
+                autopilotDirection.Update(vesselModule.sasDirectionWanted);
             }
             else if (autopilotDirection.IsVisible())
             {
@@ -513,11 +513,15 @@ namespace MandatoryRCS.UI
                 }
                 else
                 {
-                    toggle.SetToggleState(true, false);
-
+                    if (toggle.GetToggleState() == false)
+                    {
+                        toggle.SetToggleState(true, false);
+                    }
+                    
                     if (newMode == SASMode.FlyByWire)
                     {
                         vesselModule.flyByWire = false;
+                        vesselModule.rwLockedOnDirection = false;
                     }
                 }
             }

@@ -56,17 +56,23 @@ namespace MandatoryRCS
             //vessel.OnPreAutopilotUpdate += new FlightInputCallback(SASUpdate);
         }
 
-        public override void ComponentUpdate()
+        public override void ComponentFixedUpdate()
         {
             // Disable stock SAS
             vessel.Autopilot.SAS.DisconnectFlyByWire();
 
+            //vessel.Autopilot.SAS.SetTargetOrientation(vesselModule.sasDirectionWanted,vesselModule.autopilotModeHasChanged);
+            //vessel.Autopilot.SAS.ConnectFlyByWire(false);
+            //return;
+
+            //Transform vesselTransform = vessel.ReferenceTransform;
             Transform vesselTransform = vessel.ReferenceTransform;
+            
             //Quaternion delta = Quaternion.Inverse(Quaternion.Euler(90, 0, 0) * Quaternion.Inverse(vesselTransform.rotation) * _requestedAttitude);
 
-            // Find out the real shorter way to turn where we wan to.
-            // Thanks to HoneyFox
-            Vector3d tgtLocalUp = vesselTransform.transform.rotation.Inverse() * vesselModule.autopilotAttitudeWanted * Vector3d.forward;
+           // Find out the real shorter way to turn where we wan to.
+           // Thanks to HoneyFox
+           Vector3d tgtLocalUp = vesselTransform.transform.rotation.Inverse() * vesselModule.sasAttitudeWanted * Vector3d.forward;
             Vector3d curLocalUp = Vector3d.up;
 
             double turnAngle = Math.Abs(Vector3d.Angle(curLocalUp, tgtLocalUp));
@@ -75,8 +81,8 @@ namespace MandatoryRCS
 
             // And the lowest roll
             // Thanks to Crzyrndm
-            Vector3 normVec = Vector3.Cross(vesselModule.autopilotAttitudeWanted * Vector3.forward, vesselTransform.up);
-            Quaternion targetDeRotated = Quaternion.AngleAxis((float) turnAngle, normVec) * vesselModule.autopilotAttitudeWanted;
+            Vector3 normVec = Vector3.Cross(vesselModule.sasAttitudeWanted * Vector3.forward, vesselTransform.up);
+            Quaternion targetDeRotated = Quaternion.AngleAxis((float) turnAngle, normVec) * vesselModule.sasAttitudeWanted;
             float rollError = Vector3.Angle(vesselTransform.right, targetDeRotated * Vector3.right) *
                               Math.Sign(Vector3.Dot(targetDeRotated * Vector3.right, vesselTransform.forward));
 
@@ -334,29 +340,6 @@ namespace MandatoryRCS
         {
             intAccum = Vector3d.zero;
         }
-
-        //public void Load(ConfigNode node)
-        //{
-        //    if (node.HasValue("Kp"))
-        //    {
-        //        Kp = ConfigNode.ParseVector3D(node.GetValue("Kp"));
-        //    }
-        //    if (node.HasValue("Ki"))
-        //    {
-        //        Ki = ConfigNode.ParseVector3D(node.GetValue("Ki"));
-        //    }
-        //    if (node.HasValue("Kd"))
-        //    {
-        //        Kd = ConfigNode.ParseVector3D(node.GetValue("Kd"));
-        //    }
-        //}
-
-        //public void Save(ConfigNode node)
-        //{
-        //    node.SetValue("Kp", Kp.ToString());
-        //    node.SetValue("Ki", Ki.ToString());
-        //    node.SetValue("Kd", Kd.ToString());
-        //}
     }
 
 }

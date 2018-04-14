@@ -9,7 +9,7 @@ namespace MandatoryRCS
 {
     public class ComponentPersistantRotation : ComponentBase
     {
-        public override void ComponentUpdate()
+        public override void ComponentFixedUpdate()
         {
             // Vessel is loaded but not in physics, either because 
             // - It is in the physics bubble but in non-psysics timewarp
@@ -23,11 +23,11 @@ namespace MandatoryRCS
                 {
                     if (vesselModule.lockedRollMode)
                     {
-                        SetVesselAttitude(vesselModule.autopilotAttitudeWanted * Quaternion.Euler(90, 0, 0));
+                        SetVesselAttitude(vesselModule.sasAttitudeWanted * Quaternion.Euler(90, 0, 0));
                     }
                     else
                     {
-                        SetVesselAttitude(vesselModule.autopilotDirectionWanted);
+                        SetVesselAttitude(vesselModule.sasDirectionWanted);
                     }
                 }
                 // else rotate the vessel according to its angular velocity
@@ -48,6 +48,50 @@ namespace MandatoryRCS
                 }
             }
         }
+
+        public void PhysicsUpdate()
+        {
+            // Vessel is fully loaded and in physics
+            // else if (vessel.loaded && !vessel.packed && FlightGlobals.ready)
+            if (vesselModule.currentState == VesselState.PhysicsVelocityFrame)
+            {
+                // Restore the angular velocity
+                if (vesselModule.angularVelocity.magnitude > Settings.velocityThreesold)
+                {
+                    SetVesselAngularVelocity(vesselModule.angularVelocity);
+                }
+            }
+        }
+
+        public void PackedUpdate()
+        {
+            // Vessel is loaded but not in physics, either because 
+            // - It is in the physics bubble but in non-psysics timewarp
+            // - It has gone outside of the physics bubble
+            // - It was just loaded, is in the physics bubble and will be unpacked in a few frames
+            //if (vessel.loaded && vessel.packed)
+            if (vesselModule.currentState == VesselState.PackedReady || vesselModule.currentState == VesselState.PackedLoadingFirstFrameReady)
+            {
+                // If the SAS is locked, we keep the vessel rotated toward the autopilot selection
+                if (vesselModule.autopilotPersistentModeLock)
+                {
+                    if (vesselModule.lockedRollMode)
+                    {
+                        SetVesselAttitude(vesselModule.sasAttitudeWanted * Quaternion.Euler(90, 0, 0));
+                    }
+                    else
+                    {
+                        SetVesselAttitude(vesselModule.sasDirectionWanted);
+                    }
+                }
+                // else rotate the vessel according to its angular velocity
+                else if (vesselModule.angularVelocity.magnitude > Settings.velocityThreesold)
+                {
+                    RotatePackedVessel(vesselModule.angularVelocity);
+                }
+            }
+        }
+
 
         // Apply an angular momentum to the vessel
         // This should only be used on a fully loaded in physics vessel
@@ -85,6 +129,7 @@ namespace MandatoryRCS
             if (vessel.situation == Vessel.Situations.PRELAUNCH || vessel.situation == Vessel.Situations.LANDED || vessel.situation == Vessel.Situations.SPLASHED)
             { return; }
 
+            //vessel.SetRotation(Quaternion.AngleAxis(angularVelocity.magnitude * TimeWarp.CurrentRate, vessel.ReferenceTransform.rotation * angularVelocity) * vessel.transform.rotation, true);
             vessel.SetRotation(Quaternion.AngleAxis(angularVelocity.magnitude * TimeWarp.CurrentRate, vessel.ReferenceTransform.rotation * angularVelocity) * vessel.transform.rotation, true);
         }
 
@@ -93,12 +138,13 @@ namespace MandatoryRCS
             if (vessel.situation == Vessel.Situations.PRELAUNCH || vessel.situation == Vessel.Situations.LANDED || vessel.situation == Vessel.Situations.SPLASHED)
             { return; }
 
-            vessel.SetRotation(attitude, true); // SetPos = false seems to break the game on some occasions...
+            // vessel.SetRotation(attitude, true); // SetPos = false seems to break the game on some occasions...
+            vessel.SetRotation(attitude, true);
         }
 
         private void SetVesselAttitude(Vector3 direction)
         {
-            SetVesselAttitude(Quaternion.FromToRotation(vessel.GetTransform().up, direction) * vessel.transform.rotation);
+            SetVesselAttitude(Quaternion.FromToRotation(vessel.vesselTransform.up, direction) * vessel.transform.rotation);
         }
     }
 }

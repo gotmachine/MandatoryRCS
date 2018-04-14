@@ -22,6 +22,7 @@ namespace MandatoryRCS
             GameEvents.onProtoVesselSave.Add(OnProtoVesselSave);
 
             blackScreen = new GameObject("MandatoryRCS loading screen");
+            blackScreen.layer = 5;
             Canvas bsCanvas = blackScreen.AddComponent<Canvas>();
             Image bsImage = blackScreen.AddComponent<Image>();
             bsCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -58,7 +59,7 @@ namespace MandatoryRCS
 
             if (blackScreen.activeInHierarchy)
             {
-                if (vesselModule == null || vesselModule.currentState != VesselState.PackedLoadingUnloadedNotReady)
+                if (vesselModule == null || (vesselModule.ready && vesselModule.currentState != VesselState.PackedLoadingUnloadedNotReady))
                 {
                     blackScreen.SetActive(false);
                 }
