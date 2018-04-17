@@ -49,7 +49,35 @@ But you can also get the [latest release and source](https://github.com/gotmachi
 
 ## Instructions & notes
 
-#### User manual
+### SAS user manual
+
+| **Modes** | |
+|:---:|---|
+|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/KILLROT.png)  | **Kill rotation :** In this mode, the SAS only action is to counteract any angular velocity, it does not try to hold an attitude. The most efficient mode for RCS fuel consumption, and also the one where your reaction wheels will help you the most.|
+|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/FLYBYWIRE.png)  | **Fly By Wire :** This mode is whole new way of controlling your vessel. When activated, a green marker will appear on the navball at your current attitude. As long as the Fly By Wire mode stays activated, your pitch/yaw input (using the WASD keys) will no longer directly control your vessel but will instead move this marker on the navball. The SAS will then control your vessel to align it with the marker. Note that if you click again on the Fly By wire SAS button, your current attitude will be registered.
+|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/PARALLEL.png)  | **Parallel / Antiparallel :** Only available when the "target" navball context is selected, this mode will maintain your vessel parallel to you target. Great for docking, or for keeping your solar panels toward the Sun if used in conjunction with the roll lock mode.|
+
+|**Roll control**| ![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/ROLLLOCK.png) |
+|:---|---|
+
+Clicking on the middle button will enable **Roll Lock**. This force the SAS to hold the roll attitude relative to a predefined reference. Each click on the left and right buttons will offset this roll attitude by 45°, and the middle marker will update its icon to refelct that. The roll references depend on the current mode and on the selected navball context :
+- Orbit/Surface context :
+  - In RadialIn/RadialOut modes, the reference is the main body north direction.
+  - In other modes, the reference is the radial out direction. This will keep your vessel in the same orientation relative the main body horizon.
+- Target context :
+  - In Parallel/AntiParallel modes if a body is selected, the refrence is the body "east" direction.
+  - In other cases, the reference is the target north direction for bodies, and the radial direction for vessels and parts (exact direction depend on the part/vessel).
+  
+A few things to note :
+- Roll lock is disabled in the Kill Rotation mode.
+- Roll lock will disable itself if your vessel is near aligned with the roll reference. This is to prevent a sudden and nasty 180° roll turn when going from one side of the reference to the other side.
+
+| **Options** | |
+|:---:|---|
+|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/SASLIMIT.png)  | **SAS Aggressivity :** Clicking on this button will cycle the SAS settings from a low to high angular velocity limit. A lower limit will make the SAS turn less quickly, improving precision and lowering RCS fuel consumption when in space. A higher limit may be usefull in atmospheric flight.|
+|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/TARGETSUN.png)  | **Target Sun :** Allow you to set the Sun as your target. Alongside with roll lock and the target context, this will allow you to keep those solar panels perfectly aligned with the Sun.|
+|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/RCSAUTO.png)  | **RCS Auto :** In this mode, the RCS toggle is in the hands of the SAS. It will enable it when the pilot request a pitch/roll/yaw or translation command, and at the discretion of the SAS when reaction wheels aren't locked on their target|
+
 
 
 
