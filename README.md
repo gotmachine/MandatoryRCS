@@ -1,4 +1,4 @@
-# MandatoryRCS
+# MandatoryRCS 
 
 This plugin is an overhaul of KSP attitude control. It revisit the stock balance between the overpowered reaction wheels and RCS thrusters which are useless outside of docking situations. It does not propose a more realistic simulation of reaction wheels but is a collection of tweaks aimed at limiting their functions and balancing the gameplay. 
 
@@ -41,7 +41,7 @@ As a side benefit, the plugin also fix the "timewarps rotation stop" stock behav
 #### Customization
 - Features can be enabled, disabled or tweaked in the ingame "Difficulty Settings" menu.
 
-#### Download & source
+## Download & source
 
 I highly recommend that you grab it from **CKAN** !
 
@@ -51,14 +51,15 @@ But you can also get the [latest release and source](https://github.com/gotmachi
 
 ### SAS user manual
 
-| **Modes** | |
-|:---:|---|
-|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/KILLROT.png)  | **Kill rotation :** In this mode, the SAS only action is to counteract any angular velocity, it does not try to hold an attitude. The most efficient mode for RCS fuel consumption, and also the one where your reaction wheels will help you the most.|
-|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/FLYBYWIRE.png)  | **Fly By Wire :** This mode is whole new way of controlling your vessel. When activated, a green marker will appear on the navball at your current attitude. As long as the Fly By Wire mode stays activated, your pitch/yaw input (using the WASD keys) will no longer directly control your vessel but will instead move this marker on the navball. The SAS will then control your vessel to align it with the marker. Note that if you click again on the Fly By wire SAS button, your current attitude will be registered.
-|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/PARALLEL.png)  | **Parallel / Antiparallel :** Only available when the "target" navball context is selected, this mode will maintain your vessel parallel to you target. Great for docking, or for keeping your solar panels toward the Sun if used in conjunction with the roll lock mode.|
+**Reaction wheels lock**
 
-|**Roll control**| ![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/ROLLLOCK.png) |
-|:---|---|
+![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/YELLOWLOCK.png)
+
+The background color of the selected mode will change depending on the reaction wheels state. When the background is yellow, this mean that the reaction wheels are not yet locked on the required direction and or providing a very low, semi-realistic torque. When the background turn green, the reaction wheels have acquired a lock and will provide theire full torque power. It also mean that the SAS direction will be kept trough timewarps and reloads.
+
+**Roll control**
+
+![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/ROLLLOCK.png)
 
 Clicking on the middle button will enable **Roll Lock**. This force the SAS to hold the roll attitude relative to a predefined reference. Each click on the left and right buttons will offset this roll attitude by 45°, and the middle marker will update its icon to refelct that. The roll references depend on the current mode and on the selected navball context :
 - Orbit/Surface context :
@@ -72,44 +73,52 @@ A few things to note :
 - Roll lock is disabled in the Kill Rotation mode.
 - Roll lock will disable itself if your vessel is near aligned with the roll reference. This is to prevent a sudden and nasty 180° roll turn when going from one side of the reference to the other side.
 
-| **Options** | |
+| **Modes** | |
 |:---:|---|
+|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/KILLROT.png)  | **Kill rotation :** In this mode, the SAS only action is to counteract any angular velocity, it does not try to hold an attitude. The most efficient mode for RCS fuel consumption, and also the one where your reaction wheels will help you the most.|
+|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/FLYBYWIRE.png)  | **Fly By Wire :** This mode is whole new way of controlling your vessel. When activated, a green marker will appear on the navball at your current attitude. As long as the Fly By Wire mode stays activated, your pitch/yaw input (using the WASD keys) will no longer directly control your vessel but will instead move this marker on the navball. The SAS will then control your vessel to align it with the marker. Note that if you click again on the Fly By wire SAS button, your current attitude will be registered.
+|![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/PARALLEL.png)  | **Parallel / Antiparallel :** Only available when the "target" navball context is selected, this mode will maintain your vessel parallel to you target. Great for docking, or for keeping your solar panels toward the Sun if used in conjunction with the roll lock mode.|
+| **Options** | |
 |![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/SASLIMIT.png)  | **SAS Aggressivity :** Clicking on this button will cycle the SAS settings from a low to high angular velocity limit. A lower limit will make the SAS turn less quickly, improving precision and lowering RCS fuel consumption when in space. A higher limit may be usefull in atmospheric flight.|
 |![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/TARGETSUN.png)  | **Target Sun :** Allow you to set the Sun as your target. Alongside with roll lock and the target context, this will allow you to keep those solar panels perfectly aligned with the Sun.|
 |![](https://raw.githubusercontent.com/gotmachine/MandatoryRCS/dev-features/Showcase/UI%20Showcase/RCSAUTO.png)  | **RCS Auto :** In this mode, the RCS toggle is in the hands of the SAS. It will enable it when the pilot request a pitch/roll/yaw or translation command, and at the discretion of the SAS when reaction wheels aren't locked on their target|
 
-
-
+### Installation and support
 
 #### Requirements
 This **requires the ModuleManager plugin** to work. You can download it [here](http://forum.kerbalspaceprogram.com/index.php?/topic/50533-121-module-manager-275-november-29th-2016-better-late-than-never/)
 
 #### Incompatibilities
-- [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) : can still be used but the reaction wheels features will be automatically disabled.
-- [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) : can still be used but the SAS and rotation persistence features will be automatically disabled.
+- [(Semi-)Saturatable Reaction Wheels](https://github.com/Crzyrndm/RW-Saturatable) : Will conflict with the reaction wheels nerf.
+- [Persistent Rotation](https://github.com/MarkusA380/PersistentRotation) :  ~~can still be used but the SAS and rotation persistence features will be automatically disabled.~~ Currently incompatible, ask for support and I may consider adding it.
 
 #### Recommendations
 - [RCS Build Aid](https://github.com/m4v/RCSBuildAid) ([Forum post](http://forum.kerbalspaceprogram.com/index.php?/topic/33124-12-rcs-build-aid-v091/)) - Editor plugin to help you place your RCS thrusters efficiently.
-- [RLA StockAlike](https://github.com/deimos790/RLA_Continued) ([Pictures](https://imgur.com/a/xJFxC)) - A light part packs featuring (among other things) some super useful small RCS thrusters, monopropellant tanks and engines.
+- [Better Burn Time](https://forum.kerbalspaceprogram.com/index.php?/topic/126111-141-betterburntime-v161-accurate-burn-time-indicator-on-navball-no-more-na/) - Great overhaul of the right side of the navball ;)
 
 ## Disclaimer
 This is my first plugin and I'm far from a skilled programmer, so the code for this may be ugly. As far as I know, it does the job and doesn't break the game. However, keep in mind that *I don't really know what I'm doing*. If anybody has the time to review and comment my code, I'm open to suggestions and pull requests :)
 
 ## Thanks
-@MarkusA380 for figuring out how to make vessels rotate, you saved me a lot of time !
+@MarkusA380 for figuring out the basics of persistent rotation.
+@Sarbian and others contributors to MechJeb for the attitude PID controller.
 
 The whole KSP community for its awesomeness !
 
 ## Licensing
-This masterful work of art is released under the [unlicense](http://unlicense.org/). 
-
-So public domain, feel free to do anything, especially updating this plugin if I'm not around.
+Due to the integration of MechJeb-derived code, this plugin is released with mixed licensing.
+The plugin as a whole is released under the [unlicense](http://unlicense.org/), meaning public domain, meaning do as you wish.
+Individual source files contains a header indicating their license situation. 
+Most files are released in the public domain, at the exception of the following source files that contains code derived from the MechJeb plugin and are licensed under the GNU General Public License v3.0 :
+- ComponentSASAutopilot.cs
+- Lib\MathExtensions.cs
+- Lib\Vector6.cs
+- Lib\VesselPhysics.cs
 
 ## Changelog and bugs
 
 #### Known bugs and glitches
-- Getting out of timewarps with the SAS direction hold activated input a large roll "kick", most visible at high timewarp levels. I tried a lot of things to find out why this happen or fix it, and failed.
-- When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require large modifications.
+- None yet !
 
 #### v2.0 beta 1 for KSP 1.4.2
 Beta release with extra logging of debug information the the KSP.log
@@ -155,9 +164,8 @@ Beta release with extra logging of debug information the the KSP.log
 
 #### Perhaps planned features
 
-- Reaction wheels saturation over time when landed.
-- (Maybe) Make reaction wheels able to "help" RCS thrusters by providing torque when they are activated, lowering the RCS fuel consumption.
-- A RCS thrusters part pack
+- Reaction wheels overhaul with saturation simulation, automatic RCS desaturation, and possibly other means of attitude keeping like magnetorquers.
+- Integration with Better Burn Time to provide a basic maneuver node executor autopilot.
   
 #### Realism notes
   
