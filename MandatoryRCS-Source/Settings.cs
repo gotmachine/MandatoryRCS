@@ -9,7 +9,7 @@ using UnityEngine;
 namespace MandatoryRCS
 {
   // Should be allscenes, but there is a bug if called from the main menu
-  // temp fix : settings aren't available from the main menu
+  // temp fix : settings aren't available from the main menu 
   [KSPAddon(KSPAddon.Startup.AllGameScenes, false)]
     class Settings : MonoBehaviour
     {
