@@ -35,7 +35,6 @@
     <Compile Include="ComponentBase.cs" />
     <Compile Include="ComponentSASAutopilot.cs" />
     <Compile Include="GameEventsMandatoryRCS.cs" />
-    <Compile Include="Lib\ReflectionUtils.cs" />
     <Compile Include="Lib\VesselPhysics.cs" />
     <Compile Include="UI\NavBallUI.cs" />
     <Compile Include="Settings.cs" />

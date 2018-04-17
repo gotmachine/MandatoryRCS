@@ -164,9 +164,9 @@ namespace MandatoryRCS
                 }
 
                 // Should not happen but better safe than sorry
-                if (vesselModule.currentTarget == null && ModeUseTarget(vesselModule.autopilotMode))
+                if (vesselModule.currentTarget == null && (ModeUseTarget(vesselModule.autopilotMode) || vesselModule.autopilotContext == SpeedDisplayModes.Target))
                 {
-                    Debug.Log("[MRCS] [" + vessel.vesselName + "] Warning : autopilot mode was relative to target but target is null !");
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] Warning : autopilot mode or context was relative to target but target is null !");
                     if (vesselModule.autopilotContext == SpeedDisplayModes.Target)
                     {
                         vesselModule.SetContext(SpeedDisplayModes.Orbit, vesselModule.PlayerControlled(), true);
@@ -344,8 +344,6 @@ namespace MandatoryRCS
                 - Parallel/antiparallel use a "right" vector relative to the vessel forward vector
             */
 
-            //if (!vesselModule.lockedRollMode) return -vessel.GetTransform().forward;
-
             Vector3d rollRef = Vector3d.zero;
 
             if (vesselModule.autopilotContext == SpeedDisplayModes.Target
@@ -486,12 +484,7 @@ namespace MandatoryRCS
             // Don't update anything else in physics loading state, because SAS state isn't reliable at this time
             if (vesselModule.currentState == VesselState.PhysicsNotReady) return;
 
-            // Check the validity of current SAS mode/context and react to possible stock UI interactions :
-            // - SAS enabled/disabled
-            // - Target changed
-            // - Maneuver node changed
-            // - Navball context changed
-            // - Velocity becoming very low
+            // Check the validity of current SAS mode/context and react to possible stock UI interactions
             UpdateSASState();
 
             // Get direction vector
