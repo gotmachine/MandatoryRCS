@@ -1,4 +1,4 @@
-# MandatoryRCS
+# MandatoryRCS 
 
 This plugin is an overhaul of KSP attitude control. It revisit the stock balance between the overpowered reaction wheels and RCS thrusters which are useless outside of docking situations. It does not propose a more realistic simulation of reaction wheels but is a collection of tweaks aimed at limiting their functions and balancing the gameplay. 
 
