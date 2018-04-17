@@ -19,22 +19,24 @@ As a side benefit, the plugin also fix the "timewarps rotation stop" stock behav
 - Stock torque when the vessel has reached the SAS selection (prograde, normal, target, etc).
 - Hiding of irrelevant reaction wheels right-click menu options and action groups.
 
+#### New SAS modes, UI and PID controller
+- Custom SAS UI with a stockalike look and feel
+- Four new SAS modes : kill rotation, fly by wire, parallel/antiparallel to target
+- SAS is able to control the roll attitude (not recommended for atmospheric flight)
+- Option to tweak the SAS aggressivity by limiting the maximum angular velocity
+- Option to use the Sun as target
+- RCS auto mode : RCS is auto-toggled on and off according to the needs of the pilot and the SAS.
+- Implentation of the MechJeb PID controller instead of the stock one.
+
 #### Rotation persistence trough timewarp and reloading
 - Timewarping will not stop the vessel from rotating.
 - Rotation is restored after timewarping, switching vessels or reloading.
 - Rotation is not continuously calculated for unloaded (on rails) vessels, for minimal performance impact.
 
-#### SAS autopilot persistence trough timewarp and reloading
+#### SAS autopilot and target persistence trough timewarp and reloading
 - The vessel will keep its orientation toward the SAS selection when timewarping, switching vessels or reloading.
 - The SAS selection is remembered and restored when switching vessels or reloading.
-
-#### New SAS PID controller
-- Using the MechJeb PID controller instead the stock one for better accuracy and reduced RCS fuel consumption.
-
-#### New SAS modes and options
-
-
-
+- The selected target is remembered and restored when switching vessels or reloading.
 
 #### Customization
 - Features can be enabled, disabled or tweaked in the ingame "Difficulty Settings" menu.
