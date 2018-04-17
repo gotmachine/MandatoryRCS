@@ -6,7 +6,7 @@ Reaction wheels are turned into stabilizers, preventing your vessel to spin out 
 
 This mean that like in real life, most crafts always need a few RCS thrusters (and propellant) to have orientation authority, but you still get most of the playability benefits of overpowered reaction wheels.
 
-It also completly override the stock SAS code, using the much better PID controller coming stright from the well-known MechJeb plugin. Along with this comes a few new SAS modes and some other authority control features in a nice non-invasive UI that is as much stockalike as possible.
+It also completly override the stock SAS code, using the much better PID controller coming straight from the well-known MechJeb plugin. Along with this comes a few new SAS modes and some other authority control features in a nice non-invasive UI that is as much stockalike as possible.
 
 As a side benefit, the plugin also fix the "timewarps rotation stop" stock behaviour, and introduce a few related features like keeping the vessel oriented toward the SAS selection in timewarps and when switching vessels / reloading the game.
 
@@ -19,9 +19,6 @@ As a side benefit, the plugin also fix the "timewarps rotation stop" stock behav
 - Stock torque when the vessel has reached the SAS selection (prograde, normal, target, etc).
 - Hiding of irrelevant reaction wheels right-click menu options and action groups.
 
-#### New SAS modes and PID controller
-- Using the MechJeb PID controller instead the stock one for better accuracy and reduced RCS fuel consumption.
-
 #### Rotation persistence trough timewarp and reloading
 - Timewarping will not stop the vessel from rotating.
 - Rotation is restored after timewarping, switching vessels or reloading.
@@ -30,6 +27,14 @@ As a side benefit, the plugin also fix the "timewarps rotation stop" stock behav
 #### SAS autopilot persistence trough timewarp and reloading
 - The vessel will keep its orientation toward the SAS selection when timewarping, switching vessels or reloading.
 - The SAS selection is remembered and restored when switching vessels or reloading.
+
+#### New SAS PID controller
+- Using the MechJeb PID controller instead the stock one for better accuracy and reduced RCS fuel consumption.
+
+#### New SAS modes and options
+
+
+
 
 #### Customization
 - Features can be enabled, disabled or tweaked in the ingame "Difficulty Settings" menu.
@@ -71,6 +76,21 @@ So public domain, feel free to do anything, especially updating this plugin if I
 #### Known bugs and glitches
 - Getting out of timewarps with the SAS direction hold activated input a large roll "kick", most visible at high timewarp levels. I tried a lot of things to find out why this happen or fix it, and failed.
 - When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require large modifications.
+
+#### v2.0 beta 1 for KSP 1.4.2
+- Complete rewrite of the whole plugin
+- The reaction wheels nerf has been simplified, control variations are no more since this was confusing and not very relevant
+- Target persistence
+- Stock SAS PID controller is replaced by a MechJeb derived PID-controller
+- Complete in-house reimplementation of the stock SAS UI, with new modes and simple options within the UI.
+- Added a way to target the Sun
+- Added a RCS-auto mode 
+- Many bugs !
+
+#### v1.5 for KSP 1.4.1
+- Recompiled for KSP 1.4.1
+- (bugfix) Fixed NRE on asteroids changing SOI
+- (bugfix) Fixed NRE on planting flags
 
 #### v1.4 for KSP 1.3.1
 - Recompiled for KSP 1.3.1
