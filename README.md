@@ -1,10 +1,12 @@
 # MandatoryRCS
 
-This plugin revisit the stock balance between the overpowered reaction wheels and RCS thrusters which are useless outside of docking situations. It does not propose a more realistic simulation of reaction wheels but is a collection of tweaks aimed at limiting their functions and balancing the gameplay. 
+This plugin is an overhaul of KSP attitude control. It revisit the stock balance between the overpowered reaction wheels and RCS thrusters which are useless outside of docking situations. It does not propose a more realistic simulation of reaction wheels but is a collection of tweaks aimed at limiting their functions and balancing the gameplay. 
 
 Reaction wheels are turned into stabilizers, preventing your vessel to spin out of control and keeping it pointed at the direction you choose in the SAS autopilot. But they have a very low (and somewhat realistic) torque power when the pilot or the SAS request a pitch, roll or yaw rotation.
 
 This mean that like in real life, most crafts always need a few RCS thrusters (and propellant) to have orientation authority, but you still get most of the playability benefits of overpowered reaction wheels.
+
+It also completly override the stock SAS code, using the much better PID controller coming stright from the well-known MechJeb plugin. Along with this comes a few new SAS modes and some other authority control features in a nice non-invasive UI that is as much stockalike as possible.
 
 As a side benefit, the plugin also fix the "timewarps rotation stop" stock behaviour, and introduce a few related features like keeping the vessel oriented toward the SAS selection in timewarps and when switching vessels / reloading the game.
 
@@ -13,12 +15,12 @@ As a side benefit, the plugin also fix the "timewarps rotation stop" stock behav
 #### Reaction wheels nerf
 - Reaction wheels have two different torque power, the stock one and a heavily nerfed, somewhat realistic one.
 - Nerfed torque provided on pilot or SAS rotation requests.
-- Stock torque when SAS "Stability mode" is turned on.
+- Stock torque when SAS "Kill rotation" is turned on.
 - Stock torque when the vessel has reached the SAS selection (prograde, normal, target, etc).
-- Torque output is affected by the vessel angular velocity : the faster the vessel rotate, the weaker reaction wheels are.
-- Pods and cockpits built-in reaction wheels can't be controlled (they don't respond to pilot/SAS input) but still provide SAS stabilization.
-- Reaction wheels in probes cores and independent parts can be controlled.
 - Hiding of irrelevant reaction wheels right-click menu options and action groups.
+
+#### New SAS modes and PID controller
+- Using the MechJeb PID controller instead the stock one for better accuracy and reduced RCS fuel consumption.
 
 #### Rotation persistence trough timewarp and reloading
 - Timewarping will not stop the vessel from rotating.
