@@ -27,8 +27,6 @@ namespace MandatoryRCS
             AntiNormal,
             RadialIn,
             RadialOut,
-            ProgradeCorrected,
-            RetrogradeCorrected,
             Parallel,
             AntiParallel
         }
@@ -42,9 +40,7 @@ namespace MandatoryRCS
         public bool ModeInTargetContextOnly(SASMode mode)
         {
             return (mode == SASMode.Parallel
-                || mode == SASMode.AntiParallel
-                || mode == SASMode.ProgradeCorrected
-                || mode == SASMode.RetrogradeCorrected);
+                || mode == SASMode.AntiParallel);
         }
 
         public bool ModeInOrbSurfContextOnly(SASMode mode)
@@ -60,9 +56,7 @@ namespace MandatoryRCS
             return (mode == SASMode.Target
                 || mode == SASMode.AntiTarget
                 || mode == SASMode.Parallel
-                || mode == SASMode.AntiParallel
-                || mode == SASMode.ProgradeCorrected
-                || mode == SASMode.RetrogradeCorrected);
+                || mode == SASMode.AntiParallel);
         }
 
         public bool ModeUseVelocity(SASMode mode)
@@ -71,8 +65,6 @@ namespace MandatoryRCS
             {
                 case SASMode.Prograde:
                 case SASMode.Retrograde:
-                case SASMode.ProgradeCorrected:
-                case SASMode.RetrogradeCorrected:
                     return true;
                 default:
                     return false;
@@ -82,6 +74,10 @@ namespace MandatoryRCS
 
         public void ResetToKillRot()
         {
+            if (ModeUseTarget(vesselModule.autopilotMode) && vesselModule.autopilotContext == SpeedDisplayModes.Target)
+            {
+                vesselModule.SetContext(SpeedDisplayModes.Orbit, true, true);
+            }
             vesselModule.autopilotMode = SASMode.KillRot;
             vesselModule.autopilotPersistentModeLock = false;
         }
@@ -106,6 +102,36 @@ namespace MandatoryRCS
                 ResetToKillRot();
             }
 
+
+            //SAS control levels (vesselModule.Vessel.VesselValues.AutopilotSkill)  :
+            //(0) : stability assist      -> killrot
+            //(1) : + pro/retrograde      -> +pro/retrograde, hold, flybywire
+            //(2) : + normal/radial       -> +normal, radial, roll lock
+            //(3) : + target/maneuver     -> +target, maneuver
+            switch (vesselModule.autopilotMode)
+            {
+                case SASMode.Hold:         if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 1) ResetToKillRot(); break;
+                case SASMode.FlyByWire:    if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 1) ResetToKillRot(); break;
+                case SASMode.Maneuver:     if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 3) ResetToKillRot(); break;
+                case SASMode.KillRot:      if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 0) ResetToKillRot(); break;
+                case SASMode.Target:       if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 3) ResetToKillRot(); break;
+                case SASMode.AntiTarget:   if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 3) ResetToKillRot(); break;
+                case SASMode.Prograde:     if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 1) ResetToKillRot(); break;
+                case SASMode.Retrograde:   if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 1) ResetToKillRot(); break;
+                case SASMode.Normal:       if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 2) ResetToKillRot(); break;
+                case SASMode.AntiNormal:   if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 2) ResetToKillRot(); break;
+                case SASMode.RadialIn:     if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 2) ResetToKillRot(); break;
+                case SASMode.RadialOut:    if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 2) ResetToKillRot(); break;
+                case SASMode.Parallel:     if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 3) ResetToKillRot(); break;
+                case SASMode.AntiParallel: if (vesselModule.Vessel.VesselValues.AutopilotSkill.value < 3) ResetToKillRot(); break;
+            }
+            if (vesselModule.lockedRollMode && vesselModule.Vessel.VesselValues.AutopilotSkill.value < 2)
+            {
+                vesselModule.lockedRollMode = false;
+                ResetToKillRot();
+            }
+
+
             // Stock context and target state isn't reliable when loading, even if FlightGlobals.ready is true
             // because the stock target field is restored from the confignode by a coroutine.
             // It's the same for FlightGlobals.speedDisplayMode, it will be set to surface at load, and then changed a few dozen frames later.
@@ -116,6 +142,11 @@ namespace MandatoryRCS
                 // Target checks don't use the UI state, but we should not reset the SpeedDisplayModes of non-controlled vessels
                 if (!vesselModule.vesselTargetDirty && vesselModule.PlayerControlled() && vesselModule.currentTarget != FlightGlobals.fetch.VesselTarget)
                 {
+                    // If we are orbiting the sun, stock won't allow it as its target. Unless another target has been selected, we stop tracking the stock target.
+                    if ((object)vesselModule.currentTarget == Sun.Instance.sun && vessel.mainBody == Sun.Instance.sun && FlightGlobals.fetch.VesselTarget == null)
+                    {
+                        goto AbortTargetChange;
+                    }
                     Debug.Log("[MRCS] [" + vessel.vesselName + "] : target has changed, Old Target = " + vesselModule.currentTarget + ", New Target = " + vessel.targetObject);
                     vesselModule.SetTarget(vessel.targetObject, false, true);
 
@@ -129,6 +160,7 @@ namespace MandatoryRCS
                     {
                         ResetToKillRot();
                     }
+                    AbortTargetChange:;
                 }
 
                 // Should not happen but better safe than sorry
@@ -289,35 +321,6 @@ namespace MandatoryRCS
                         direction = vesselModule.currentTarget.GetTransform().up.normalized;
 
                     return vesselModule.autopilotMode == SASMode.Parallel ? direction.normalized : (-direction).normalized;
-                case SASMode.ProgradeCorrected:
-                case SASMode.RetrogradeCorrected:
-                    //TODO : this doesn't work well
-                    if (vesselModule.currentTarget == null) return vessel.vesselTransform.up.normalized;
-                    Vector3 targetDirInv = vessel.vesselTransform.position - vesselModule.currentTarget.GetTransform().position;
-                    Vector3 targetRelVel = vessel.GetObtVelocity() - vesselModule.currentTarget.GetObtVelocity();
-
-                    Vector3 correction = Vector3.ProjectOnPlane(-targetRelVel,targetDirInv);
-
-                    // Avoid chasing the target when relative velocity is very low
-                    if (correction.magnitude < 0.05)
-                    {
-                        vesselModule.sasDirectionWanted = -targetDirInv;
-                        break;
-                    }
-                    // approch target direction
-                    else
-                    {
-                        correction = correction * ((targetDirInv.magnitude / correction.magnitude) * Math.Max(correction.magnitude / targetDirInv.magnitude, 1.0f));
-                    }
-
-                    vesselModule.sasDirectionWanted = correction - targetDirInv;
-
-                    if (vesselModule.autopilotMode == SASMode.RetrogradeCorrected)
-                    {
-                        vesselModule.sasDirectionWanted *= -1;
-                    }
-                    break;
-
             }
 
             // In other cases, return the direction from the previous step

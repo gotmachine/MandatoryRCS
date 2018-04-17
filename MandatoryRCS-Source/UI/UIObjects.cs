@@ -9,295 +9,214 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace MandatoryRCS
 {
-    public class SASMarker
-    {
-        public string name;
-    }
 
-    public class SASMarkerSimple : SASMarker
+    public class SASButton
     {
-        //public Sprite spriteOn;
-        //public Sprite spriteOff;
-        //public Sprite spriteSymbol;
+        public enum ButtonType
+        {
+            ButtonBasic,
+            ButtonSymbol,
+            ToggleTwoState,
+            ToggleThreeState
+        }
+
 
         private GameObject buttonObject;
-        private GameObject button;
-        private Button buttonComponent;
-        private KSP.UI.TooltipTypes.TooltipController_Text tooltip;
+        private GameObject symbolObject;
+        private GameObject backgroundObject;
+        private Image backgroundImage;
         private Image symbolImage;
-
+        private Sprite spriteBackground;
+        private Sprite spriteSymbol;
+        private EventTrigger trigger;
+        private KSP.UI.TooltipTypes.TooltipController_Text tooltip;
         private NavBallHandler handler;
+        private ButtonType type;
+        public ButtonType Type() { return type; }
 
-        public SASMarkerSimple(NavBallHandler handler, string name, Vector2 position, GameObject parent, Sprite spriteSymbol)
+        private Color inactiveColor = new Color32(255,255,255,50);
+        private Color offColor = new Color32(255,118,114,255);
+        private Color onColor = new Color32(90,255,90,255);
+        private Color onAltColor = new Color32(255,251,58,255);
+        public int ControlLevel { get; private set; } = -1;
+
+        public SASButton(NavBallHandler handler, int controlLevel, string name, ButtonType type, Vector2 position, GameObject parent, Sprite spriteBackground, Sprite spriteSymbol = null)
         {
             this.handler = handler;
-            this.name = name;
+            ControlLevel = controlLevel;
+            this.type = type;
+            this.spriteBackground = spriteBackground;
+            this.spriteSymbol = spriteSymbol;
 
-            buttonObject = new GameObject(name);
+            buttonObject = new GameObject(name, typeof(RectTransform));
             buttonObject.transform.SetParent(parent.transform);
+            buttonObject.GetComponent<RectTransform>().sizeDelta = new Vector2(24, 24);
             buttonObject.layer = LayerMask.NameToLayer("UI");
+            
+            backgroundObject = new GameObject("backgroundObject", typeof(RectTransform));
+            backgroundObject.transform.SetParent(buttonObject.transform);
+            backgroundObject.GetComponent<RectTransform>().sizeDelta = new Vector2(24, 24);
+            backgroundObject.layer = LayerMask.NameToLayer("UI");
 
-            button = new GameObject("Button");
-            button.transform.SetParent(buttonObject.transform);
-            button.layer = LayerMask.NameToLayer("UI");
+            backgroundImage = backgroundObject.AddComponent<Image>();
+            backgroundImage.sprite = this.spriteBackground;
+            backgroundImage.type = Image.Type.Simple;
 
-            symbolImage = button.AddComponent<Image>();
-            symbolImage.sprite = spriteSymbol;
-            symbolImage.type = Image.Type.Simple;
+            backgroundImage.color = type == ButtonType.ButtonBasic ? Color.white : offColor;
 
-            buttonComponent = button.AddComponent<Button>();
-            buttonComponent.transition = Selectable.Transition.None;
+            if (spriteSymbol != null)
+            {
+                symbolObject = new GameObject("symbolObject", typeof(RectTransform));
+                symbolObject.transform.SetParent(buttonObject.transform);
+                symbolObject.GetComponent<RectTransform>().sizeDelta = new Vector2(18, 18);
+                symbolObject.layer = LayerMask.NameToLayer("UI");
 
-            buttonComponent.onClick.AddListener(OnClick);
+                symbolImage = symbolObject.AddComponent<Image>();
+                symbolImage.sprite = this.spriteSymbol;
+                symbolImage.type = Image.Type.Simple;  
+            }
+
+            trigger = buttonObject.AddComponent<EventTrigger>();
+
+            EventTrigger.Entry mouseDown = new EventTrigger.Entry();
+            mouseDown.eventID = EventTriggerType.PointerClick;
+            mouseDown.callback.AddListener((data) => { OnPointerDownDelegate((PointerEventData)data); });
+            trigger.triggers.Add(mouseDown);
+
+            EventTrigger.Entry mouseUp = new EventTrigger.Entry();
+            mouseDown.eventID = EventTriggerType.PointerUp;
+            mouseDown.callback.AddListener((data) => { OnPointerUpDelegate((PointerEventData)data); });
+            trigger.triggers.Add(mouseUp);
+
+            tooltip = buttonObject.AddComponent<KSP.UI.TooltipTypes.TooltipController_Text>();
+            tooltip.prefab = UILib.tooltipPrefab;
+            tooltip.SetText(name);
 
             buttonObject.transform.localPosition = position;
-            //buttonObject.transform.localScale = new Vector3(0.5f, 0.5f, 1.0f);
-            button.GetComponent<RectTransform>().sizeDelta = new Vector2(24, 24);
 
-            tooltip = button.AddComponent<KSP.UI.TooltipTypes.TooltipController_Text>();
-            tooltip.prefab = UILib.tooltipPrefab;
-            tooltip.SetText(name);
+            visible = true;
+            active = true;
+            toggleState = false;
+            altOnState = false;
         }
 
-        private void OnClick()
+
+        public void OnPointerDownDelegate(PointerEventData data)
         {
-            //GameObject ButtonClicked = EventSystem.current.currentSelectedGameObject;
             handler.ButtonClick(this);
+
+            if (type == ButtonType.ButtonSymbol)
+            {
+                backgroundImage.color = onColor;
+            }
         }
 
-        public void SetActive(bool active) { button.SetActive(active); }
-        public bool GetActive() { return button.activeInHierarchy; }
-
-        public void SetVisible(bool visible) { buttonObject.SetActive(visible); }
-        public bool GetVisible() { return buttonObject.activeInHierarchy; }
-
-        public void SetSprite(Sprite symbol)
+        public void OnPointerUpDelegate(PointerEventData data)
         {
-            symbolImage.sprite = symbol;
+            if (type == ButtonType.ButtonSymbol)
+            {
+                backgroundImage.color = offColor;
+            }
+        }
+
+
+        // Non-visible button is completly hidden and don't respond to clicks
+        private bool visible;
+        public bool Visible
+        {
+            get {return visible;}
+            set
+            {
+                visible = value;
+                buttonObject.SetActive(visible);
+                trigger.enabled = visible;
+            }
+        }
+
+        // Not active button is grayed and don't respond to clicks
+        private bool active;
+        public bool Active
+        {
+            get { return active; }
+            set
+            {
+                active = value;
+                trigger.enabled = active;
+                if (active)
+                {
+                    if (type == ButtonType.ButtonSymbol)
+                    {
+                        backgroundImage.color = offColor;
+                    }
+                    else
+                    {
+                        backgroundImage.color = toggleState ? altOnState ? onAltColor : onColor : offColor;
+                    }
+                    
+                }
+                else
+                {
+                    backgroundImage.color = inactiveColor;
+                }
+                
+            }
+        }
+
+        // Switch between the on and off background images and update state
+        private bool toggleState;
+        public bool ToggleState
+        {
+            get {return toggleState;}
+            set
+            {
+                if (type == ButtonType.ToggleTwoState || type == ButtonType.ToggleThreeState)
+                {
+                    toggleState = value;
+                    if (!active)
+                    {
+                        backgroundImage.color = inactiveColor;
+                    }
+                    else
+                    {
+                        backgroundImage.color = toggleState ? altOnState ? onAltColor : onColor : offColor;
+                    }
+                }
+            }
+        }
+
+        private bool altOnState;
+        public bool AltOnState
+        {
+            get { return altOnState; }
+            set
+            {
+                if (type == ButtonType.ToggleThreeState)
+                {
+                    altOnState = value;
+                    backgroundImage.color = toggleState ? altOnState ? onAltColor : onColor : offColor;
+                }
+            }
+        }
+
+        public void ChangeSymbolSprite(Sprite sprite = null)
+        {
+            if (symbolObject != null)
+            {
+                symbolImage.sprite = sprite == null ? spriteSymbol : sprite;
+            }
+        }
+
+        public void ChangeBackgroundSprite(Sprite sprite = null)
+        {
+            backgroundImage.sprite = sprite == null ? spriteBackground : sprite;
         }
 
     }
-
-    public class SASMarkerButton : SASMarker
-    {
-        //public Sprite spriteOn;
-        //public Sprite spriteOff;
-        //public Sprite spriteSymbol;
-
-        private GameObject buttonObject;
-        private GameObject button;
-        private GameObject symbol;
-        private Button buttonComponent;
-        private KSP.UI.TooltipTypes.TooltipController_Text tooltip;
-        private Image symbolImage;
-        private Image offImage;
-
-        private NavBallHandler handler;
-
-        public SASMarkerButton(NavBallHandler handler, string name, Vector2 position, GameObject parent, Sprite spriteSymbol, Sprite spriteOff, Sprite spriteOn)
-        {
-            this.handler = handler;
-            this.name = name;
-
-            buttonObject = new GameObject(name);
-            buttonObject.transform.SetParent(parent.transform);
-            buttonObject.layer = LayerMask.NameToLayer("UI");
-
-            button = new GameObject("Button");
-            button.transform.SetParent(buttonObject.transform);
-            button.layer = LayerMask.NameToLayer("UI");
-
-            offImage = button.AddComponent<Image>();
-            offImage.sprite = spriteOff;
-            offImage.type = Image.Type.Simple;
-
-            symbol = new GameObject("Symbol");
-            symbol.transform.SetParent(buttonObject.transform);
-            symbol.layer = LayerMask.NameToLayer("UI");
-
-            symbolImage = symbol.AddComponent<Image>();
-            symbolImage.sprite = spriteSymbol;
-            symbolImage.raycastTarget = false;
-            symbolImage.type = Image.Type.Simple;
-
-            buttonComponent = button.AddComponent<Button>();
-            buttonComponent.transition = Selectable.Transition.SpriteSwap;
-            buttonComponent.targetGraphic = offImage;
-            SpriteState ss = new SpriteState();
-            ss.pressedSprite = spriteOn;
-            buttonComponent.spriteState = ss;
-
-            buttonComponent.onClick.AddListener(OnClick);
-
-            buttonObject.transform.localPosition = position;
-            //buttonObject.transform.localScale = new Vector3(0.5f, 0.5f, 1.0f);
-            button.GetComponent<RectTransform>().sizeDelta = new Vector2(24, 24);
-            symbol.GetComponent<RectTransform>().sizeDelta = new Vector2(17, 17);
-
-            tooltip = button.AddComponent<KSP.UI.TooltipTypes.TooltipController_Text>();
-            tooltip.prefab = UILib.tooltipPrefab;
-            tooltip.SetText(name);
-        }
-
-        private void OnClick()
-        {
-            //GameObject ButtonClicked = EventSystem.current.currentSelectedGameObject;
-            handler.ButtonClick(this);
-        }
-
-        public void SetActive(bool active) { button.SetActive(active); }
-        public bool GetActive() { return button.activeInHierarchy; }
-
-        public void SetVisible(bool visible) { buttonObject.SetActive(visible); }
-        public bool GetVisible() { return buttonObject.activeInHierarchy; }
-
-        public void SetSymbolSprite(Sprite symbol)
-        {
-            symbolImage.sprite = symbol;
-        }
-
-    }
-
-    public class SASMarkerToggle : SASMarker
-    {
-        //public Sprite spriteOn;
-        //public Sprite spriteOff;
-        //public Sprite spriteSymbol;
-        public bool isOn;
-        public bool overlayVisible;
-        public bool buttonVisible;
-
-        private GameObject toggleObject;
-        private GameObject toggle;
-        private GameObject symbol;
-        private GameObject overlayOff;
-        private GameObject overlayOn;
-        private Toggle toggleComponent;
-        private KSP.UI.TooltipTypes.TooltipController_Text tooltip;
-        private Image symbolImage;
-        private Image onImage;
-        private Image offImage;
-        private Sprite spriteOnLocked;
-        private Sprite spriteOnNotLocked;
-
-        private NavBallHandler handler;
-
-        public SASMarkerToggle(NavBallHandler handler, string name, Vector2 position, GameObject parent, Sprite spriteSymbol, Sprite spriteOff, Sprite spriteOnLocked, Sprite spriteOnNotLocked)
-        {
-            this.handler = handler;
-            this.name = name;
-
-            toggleObject = new GameObject(name);
-            toggleObject.transform.SetParent(parent.transform);
-            toggleObject.layer = LayerMask.NameToLayer("UI");
-
-            toggle = new GameObject(name + " toggle");
-            toggle.transform.SetParent(toggleObject.transform);
-            toggle.layer = LayerMask.NameToLayer("UI");
-
-            overlayOff = new GameObject("OverlayOff");
-            overlayOff.transform.SetParent(toggle.transform);
-            overlayOff.layer = LayerMask.NameToLayer("UI");
-
-            overlayOn = new GameObject("OverlayOn");
-            overlayOn.transform.SetParent(overlayOff.transform);
-            overlayOn.layer = LayerMask.NameToLayer("UI");
-
-            symbol = new GameObject("Symbol");
-            symbol.transform.SetParent(toggleObject.transform);
-            symbol.layer = LayerMask.NameToLayer("UI");
-
-            symbolImage = symbol.AddComponent<Image>();
-            symbolImage.sprite = spriteSymbol;
-            symbolImage.raycastTarget = false;
-            symbolImage.type = Image.Type.Simple;
-
-            offImage = overlayOff.AddComponent<Image>();
-            offImage.sprite = spriteOff;
-            offImage.type = Image.Type.Simple;
-
-            this.spriteOnLocked = spriteOnLocked;
-            this.spriteOnNotLocked = spriteOnNotLocked;
-
-            onImage = overlayOn.AddComponent<Image>();
-            onImage.sprite = this.spriteOnLocked;
-            onImage.type = Image.Type.Simple;
-
-            toggleComponent = toggle.AddComponent<Toggle>();
-            toggleComponent.transition = Selectable.Transition.ColorTint;
-            toggleComponent.targetGraphic = offImage;
-            toggleComponent.isOn = false;
-            toggleComponent.toggleTransition = Toggle.ToggleTransition.None; // fade ?
-            toggleComponent.graphic = onImage;
-            toggleComponent.onValueChanged.AddListener(OnToggleState);
-
-
-            toggleObject.transform.localPosition = position;
-            //toggleObject.transform.localScale = new Vector3(0.5f, 0.5f, 1.0f);
-            toggle.GetComponent<RectTransform>().sizeDelta = new Vector2(25, 25); //24,24
-            //toggle.GetComponent<RectTransform>().anchoredPosition3D = position;
-            //toggle.GetComponent<RectTransform>().localScale = new Vector3(0.5f, 0.5f, 1.0f);
-            symbol.GetComponent<RectTransform>().sizeDelta = new Vector2(18, 18); // 17,17
-            overlayOff.GetComponent<RectTransform>().sizeDelta = new Vector2(25, 25); //24,24
-            overlayOn.GetComponent<RectTransform>().sizeDelta = new Vector2(25, 25); //24,24
-
-            tooltip = toggle.AddComponent<KSP.UI.TooltipTypes.TooltipController_Text>();
-            tooltip.prefab = UILib.tooltipPrefab;
-            tooltip.SetText(name);
-        }
-
-        private void OnToggleState(bool enabled)
-        {
-            //GameObject ButtonClicked = EventSystem.current.currentSelectedGameObject;
-            handler.ToggleClick(this, enabled);
-            offImage.enabled = !enabled;
-        }
-
-        public void UpdateLockState(bool locked)
-        {
-            onImage.sprite = locked ? spriteOnLocked : spriteOnNotLocked;
-        }
-
-        public void SetActive(bool active) { toggle.SetActive(active); }
-        public bool GetActive() { return toggle.activeInHierarchy; }
-
-        public void SetVisible(bool visible) { toggleObject.SetActive(visible); }
-        public bool GetVisible() { return toggleObject.activeInHierarchy; }
-
-        public void SetTooltipText(string text)
-        {
-            tooltip.SetText(text);
-        }
-
-        public void SetTooltipEnabled(bool enabled)
-        {
-            tooltip.enabled = enabled;
-        }
-
-        public void SetToggleState(bool enabled, bool fireEvent = true)
-        {
-            if (!fireEvent) toggleComponent.onValueChanged.RemoveListener(OnToggleState);
-            toggleComponent.isOn = enabled;
-            offImage.enabled = !enabled;
-            if (!fireEvent) toggleComponent.onValueChanged.AddListener(OnToggleState);
-        }
-
-        public bool GetToggleState()
-        {
-            return toggleComponent.isOn;
-        }
-
-        public void SetSymbolSprite(Sprite sprite)
-        {
-            symbolImage.sprite = sprite;
-        }
-
-    }
-
 
     public class NavBallvector
     {

@@ -10,9 +10,7 @@ namespace MandatoryRCS.UI
     public class UISprites : MonoBehaviour
     {
         // Overlays
-        public static Sprite spriteOnLocked;
-        public static Sprite spriteOnNotLocked;
-        public static Sprite spriteOff;
+        public static Sprite spriteButtonBackground;
         // Markers
         public static Sprite spriteHold;
         public static Sprite spriteFlyByWire;
@@ -59,9 +57,7 @@ namespace MandatoryRCS.UI
         {
             DontDestroyOnLoad(this);
 
-            spriteOnLocked = UILib.GetSprite("OVERLAY_GREEN");
-            spriteOnNotLocked = UILib.GetSprite("OVERLAY_YELLOW");
-            spriteOff = UILib.GetSprite("OVERLAY_RED");
+            spriteButtonBackground = UILib.GetSprite("MARKER_BG_GREY");
             // Markers
             spriteHold = UILib.GetSprite("HOLDSMOOTH");
             spriteFlyByWire = UILib.GetSprite("FLYBYWIRE");
@@ -75,8 +71,6 @@ namespace MandatoryRCS.UI
             spriteAntiNormal = UILib.GetSprite("ANTINORMAL");
             spriteRadialIn = UILib.GetSprite("RADIAL_IN");
             spriteRadialOut = UILib.GetSprite("RADIAL_OUT");
-            spriteProgradeCorrected = UILib.GetSprite("PROGRADE_CORRECTED");
-            spriteRetrogradeCorrected = UILib.GetSprite("RETROGRADE_CORRECTED");
             spriteParallel = UILib.GetSprite("PARALLEL");
             spriteAntiParallel = UILib.GetSprite("ANTIPARALLEL");
             // Roll markers

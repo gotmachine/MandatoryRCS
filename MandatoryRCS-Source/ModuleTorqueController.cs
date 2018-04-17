@@ -93,27 +93,5 @@ namespace MandatoryRCS
             }
         }
 
-        //private void SetWheelModuleTorque(Vector3 torque)
-        //{
-        //    if (torque.magnitude < Single.Epsilon)
-        //    {
-        //        rwmodule.RollTorque = 0;
-        //        rwmodule.PitchTorque = 0;
-        //        rwmodule.YawTorque = 0;
-        //        rwmodule.enabled = false; // This reduce the "residual torque effect" that is driving me nuts.
-        //        rwmodule.isEnabled = false;
-        //        rwmodule.actuatorModeCycle = 1; // This prevent some weird behaviour of the SAS causing it to be unable to use RCS properly when reaction wheels have zero torque.
-        //    }
-        //    else
-        //    {
-        //        rwmodule.PitchTorque = torque.x;
-        //        rwmodule.RollTorque = torque.y;
-        //        rwmodule.YawTorque = torque.z;
-        //        rwmodule.enabled = true;
-        //        rwmodule.isEnabled = true;
-        //        rwmodule.actuatorModeCycle = 0;
-        //    }
-        //}
-
     }
 }

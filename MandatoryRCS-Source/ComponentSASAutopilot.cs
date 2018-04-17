@@ -53,22 +53,12 @@ namespace MandatoryRCS
             pid = new PIDControllerV3(Vector3d.zero, Vector3d.zero, Vector3d.zero, 1, -1);
             setPIDParameters();
             lastAct = Vector3d.zero;
-            //vessel.OnPreAutopilotUpdate += new FlightInputCallback(SASUpdate);
         }
 
         public override void ComponentFixedUpdate()
         {
-            // Disable stock SAS
-            vessel.Autopilot.SAS.DisconnectFlyByWire();
-
-            //vessel.Autopilot.SAS.SetTargetOrientation(vesselModule.sasDirectionWanted,vesselModule.autopilotModeHasChanged);
-            //vessel.Autopilot.SAS.ConnectFlyByWire(false);
-            //return;
-
             //Transform vesselTransform = vessel.ReferenceTransform;
             Transform vesselTransform = vessel.ReferenceTransform;
-            
-            //Quaternion delta = Quaternion.Inverse(Quaternion.Euler(90, 0, 0) * Quaternion.Inverse(vesselTransform.rotation) * _requestedAttitude);
 
            // Find out the real shorter way to turn where we wan to.
            // Thanks to HoneyFox
@@ -257,7 +247,6 @@ namespace MandatoryRCS
                     vm.autopilotMode = SASMode.KillRot;
                 }
             }
-            // TODO : the vesselModule seems to exist in the Vessel even if unloaded, why are we going into the protovessel ?
             else if (data.host.protoVessel.vesselModules != null)
             {
                 bool SASModeLock = false;

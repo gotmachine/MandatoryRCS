@@ -65,7 +65,7 @@ namespace MandatoryRCS
                     orientationDiff = Vector3.Angle(vesselModule.sasDirectionWanted, vessel.GetTransform().up);
                 }
 
-                if (!vesselModule.rwLockedOnDirection && orientationDiff < 0.4 && vesselModule.angularVelocity.magnitude < 0.05)
+                if (!vesselModule.rwLockedOnDirection && orientationDiff < 0.5 && vesselModule.angularVelocity.magnitude < 0.05)
                 {
                     vesselModule.rwLockedOnDirection = true;
                 }

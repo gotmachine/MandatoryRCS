@@ -85,6 +85,9 @@ namespace MandatoryRCS
         public bool autopilotModeHasChanged = false;
         public bool hasSAS = false;
 
+        private VesselAutopilot.VesselSAS stockSAS;
+        private bool useStockSAS = false;
+
         #endregion
         // TODO : check that we reset the direction lock when reset the SAS mode from the target handling code
         public bool rwLockedOnDirection;
@@ -93,8 +96,6 @@ namespace MandatoryRCS
         private bool callbackFirstFrameSkipped = false;
 
         // Target info
-        // TODO : investigate the "target offset" between our calculated direction and the navball direction
-
         [KSPField(isPersistant = true)]
         public ProtoTargetInfo targetInfo = new ProtoTargetInfo();
         public ITargetable currentTarget;
@@ -129,9 +130,13 @@ namespace MandatoryRCS
                 component.Start();
             }
 
+            stockSAS = new VesselAutopilot.VesselSAS(vessel);
+
             // Note : OnPreAutopilotUpdate seems to be called AFTER the vesselModule FixedUpdate();
             vessel.OnPreAutopilotUpdate -= OnPreAutopilotUpdate;
             vessel.OnPreAutopilotUpdate += OnPreAutopilotUpdate;
+            //vessel.OnPostAutopilotUpdate -= OnPostAutopilotUpdate;
+            //vessel.OnPostAutopilotUpdate += OnPostAutopilotUpdate;
             currentState = VesselState.Unloaded;
             callbackFirstFrameSkipped = false;
         }
@@ -140,7 +145,19 @@ namespace MandatoryRCS
 
         private void OnPreAutopilotUpdate(FlightCtrlState s)
         {
+            // Disable stock SAS, we can't use it because the vessel.Autopilot will fight us by giving directions and resetting PID
+            vessel.Autopilot.SAS.DisconnectFlyByWire();
+
             VesselModuleUpdate(true, s);
+
+            if (useStockSAS)
+            {
+                stockSAS.ConnectFlyByWire(false);
+            }
+            else
+            {
+                stockSAS.DisconnectFlyByWire();
+            }
         }
 
         private void VesselModuleUpdate(bool fromCallback, FlightCtrlState ctrlState = null)
@@ -191,19 +208,27 @@ namespace MandatoryRCS
                 // Update the autopilot action
                 if (autopilotEnabled && flightCtrlState != null)
                 {
-                    // Get MoI first, it isn't dependent on anything else
-                    VesselPhysics.GetVesselMoI(vessel, out MOI);
-
                     // We know how reaction wheels will behave, set RCS auto mode
                     // TODO : check if we need to reset the SAS PID on RCS enable/disable-> sasAutopilot.Reset()
                     RCSAutoSet();
 
-                    // Get the available torque
-                    VesselPhysics.GetVesselAvailableTorque(vessel, MOI, out torqueAvailable, out torqueReactionSpeed, out angularDistanceToStop);
+                    if (useStockSAS)
+                    {
+                        stockSAS.lockedMode = autopilotMode == SASMode.KillRot;
+                        stockSAS.SetTargetOrientation(sasDirectionWanted, autopilotModeHasChanged);
+                    }
+                    else
+                    {
+                        // Get MoI first, it isn't dependent on anything else
+                        VesselPhysics.GetVesselMoI(vessel, out MOI);
 
-                    // It's time to calculate how the autopilot should steer the vessel;
-                    if (autopilotModeHasChanged) { sasAutopilot.Reset(); }
-                    sasAutopilot.ComponentFixedUpdate();
+                        // Get the available torque
+                        VesselPhysics.GetVesselAvailableTorque(vessel, MOI, out torqueAvailable, out torqueReactionSpeed, out angularDistanceToStop);
+
+                        // It's time to calculate how the autopilot should steer the vessel;
+                        if (autopilotModeHasChanged) { sasAutopilot.Reset(); }
+                        sasAutopilot.ComponentFixedUpdate();
+                    }
                 }
             }
             // Reset the SAS mode change flag
@@ -222,7 +247,7 @@ namespace MandatoryRCS
             // Ensure we have done all this at last once
             // Used by the navball UI, which should not be initialized before everything has been checked.
             ready = true;
-            //persistentRotation.PackedUpdate();
+            persistentRotation.ComponentUpdate();
 
         }
 
@@ -414,11 +439,14 @@ namespace MandatoryRCS
             {
                 if (!PlayerControlled())
                 {
-                    Debug.Log("[MRCS] [" + vessel.vesselName + "] WARNING : trying to set FlightGlobals.SpeedMode from a non player controlled vessel");
+                    Debug.Log("[MRCS] [" + vessel.vesselName + "] WARNING : trying to set stock vessel target from a non player controlled vessel");
                 }
                 else
                 {
+                    // Note : if we are orbiting the sun, stock won't allow to set it as its target.
+                    // We still register it and we handle this special case in the target watcher
                     FlightGlobals.fetch.SetVesselTarget(target, true);
+                    
                 }  
             }
 

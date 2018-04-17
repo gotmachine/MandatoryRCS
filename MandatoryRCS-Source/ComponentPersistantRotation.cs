@@ -11,24 +11,25 @@ namespace MandatoryRCS
     {
         public override void ComponentFixedUpdate()
         {
-            // Vessel is loaded but not in physics, either because 
-            // - It is in the physics bubble but in non-psysics timewarp
-            // - It has gone outside of the physics bubble
-            // - It was just loaded, is in the physics bubble and will be unpacked in a few frames
-            //if (vessel.loaded && vessel.packed)
+            // We rotate all packed vessels
             if (vesselModule.currentState == VesselState.PackedReady || vesselModule.currentState == VesselState.PackedLoadingFirstFrameReady)
             {
-                // If the SAS is locked, we keep the vessel rotated toward the autopilot selection
+                // If the SAS is locked, we keep the vessel rotated toward the SAS selection
                 if (vesselModule.autopilotPersistentModeLock)
                 {
-                    if (vesselModule.lockedRollMode)
-                    {
-                        SetVesselAttitude(vesselModule.sasAttitudeWanted * Quaternion.Euler(90, 0, 0));
-                    }
-                    else
-                    {
-                        SetVesselAttitude(vesselModule.sasDirectionWanted);
-                    }
+                    // We are calculating the SAS attitude in Update(), so we need to make sure Update() has run at least once before doing anything.
+                    // TODO : probably due to the Update() situation, the movement is choppy, this need to be tested with a heavy load/low fps situation
+                    // Maybe we can find a way to prevent this. We could try moving this part to Update(), but this seems risky.
+                    //if (!vesselModule.ready) return;      
+
+                    //if (vesselModule.lockedRollMode)
+                    //{
+                    //    SetVesselAttitude(vesselModule.sasAttitudeWanted * Quaternion.Euler(90, 0, 0));
+                    //}
+                    //else
+                    //{
+                    //    SetVesselAttitude(vesselModule.sasDirectionWanted);
+                    //}
                 }
                 // else rotate the vessel according to its angular velocity
                 else if (vesselModule.angularVelocity.magnitude > Settings.velocityThreesold)
@@ -37,11 +38,10 @@ namespace MandatoryRCS
                 }
             }
 
-            // Vessel is fully loaded and in physics
-            // else if (vessel.loaded && !vessel.packed && FlightGlobals.ready)
+            // This is the first frame where the vessel is fully loaded and in physics
+            // so we apply the saved angular velocity to the vessel.
             else if (vesselModule.currentState == VesselState.PhysicsVelocityFrame)
             {
-                // Restore the angular velocity
                 if (vesselModule.angularVelocity.magnitude > Settings.velocityThreesold)
                 {
                     SetVesselAngularVelocity(vesselModule.angularVelocity);
@@ -49,51 +49,27 @@ namespace MandatoryRCS
             }
         }
 
-        public void PhysicsUpdate()
+        public override void ComponentUpdate()
         {
-            // Vessel is fully loaded and in physics
-            // else if (vessel.loaded && !vessel.packed && FlightGlobals.ready)
-            if (vesselModule.currentState == VesselState.PhysicsVelocityFrame)
+            // We rotate all packed vessels
+            if (vesselModule.autopilotPersistentModeLock 
+                && vesselModule.ready
+                && (vesselModule.currentState == VesselState.PackedReady || vesselModule.currentState == VesselState.PackedLoadingFirstFrameReady))
             {
-                // Restore the angular velocity
-                if (vesselModule.angularVelocity.magnitude > Settings.velocityThreesold)
+                if (vesselModule.lockedRollMode)
                 {
-                    SetVesselAngularVelocity(vesselModule.angularVelocity);
+                    SetVesselAttitude(vesselModule.sasAttitudeWanted * Quaternion.Euler(90, 0, 0));
                 }
-            }
-        }
-
-        public void PackedUpdate()
-        {
-            // Vessel is loaded but not in physics, either because 
-            // - It is in the physics bubble but in non-psysics timewarp
-            // - It has gone outside of the physics bubble
-            // - It was just loaded, is in the physics bubble and will be unpacked in a few frames
-            //if (vessel.loaded && vessel.packed)
-            if (vesselModule.currentState == VesselState.PackedReady || vesselModule.currentState == VesselState.PackedLoadingFirstFrameReady)
-            {
-                // If the SAS is locked, we keep the vessel rotated toward the autopilot selection
-                if (vesselModule.autopilotPersistentModeLock)
+                else
                 {
-                    if (vesselModule.lockedRollMode)
-                    {
-                        SetVesselAttitude(vesselModule.sasAttitudeWanted * Quaternion.Euler(90, 0, 0));
-                    }
-                    else
-                    {
-                        SetVesselAttitude(vesselModule.sasDirectionWanted);
-                    }
+                    SetVesselAttitude(vesselModule.sasDirectionWanted);
                 }
-                // else rotate the vessel according to its angular velocity
-                else if (vesselModule.angularVelocity.magnitude > Settings.velocityThreesold)
-                {
-                    RotatePackedVessel(vesselModule.angularVelocity);
-                }
+               
             }
         }
 
 
-        // Apply an angular momentum to the vessel
+        // Apply an angular velocity to the vessel
         // This should only be used on a fully loaded in physics vessel
         private void SetVesselAngularVelocity(Vector3 angularVelocity)
         {
@@ -119,7 +95,7 @@ namespace MandatoryRCS
             }
         }
 
-        // Update the vessel rotation according to the provided angular momentum
+        // Update the vessel rotation according to the provided angular velocity
         // Should only be used on a loaded and packed vessel (a vessel in non-physics timewarp)
         private void RotatePackedVessel(Vector3 angularVelocity)
         {
@@ -140,6 +116,7 @@ namespace MandatoryRCS
 
             // vessel.SetRotation(attitude, true); // SetPos = false seems to break the game on some occasions...
             vessel.SetRotation(attitude, true);
+
         }
 
         private void SetVesselAttitude(Vector3 direction)

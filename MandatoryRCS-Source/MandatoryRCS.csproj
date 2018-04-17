@@ -35,6 +35,7 @@
     <Compile Include="ComponentBase.cs" />
     <Compile Include="ComponentSASAutopilot.cs" />
     <Compile Include="GameEventsMandatoryRCS.cs" />
+    <Compile Include="Lib\ReflectionUtils.cs" />
     <Compile Include="Lib\VesselPhysics.cs" />
     <Compile Include="UI\NavBallUI.cs" />
     <Compile Include="Settings.cs" />
@@ -54,6 +55,9 @@
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\..\..\..\Kerbal Space Program 1.4.1 DEV\KSP_x64_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
+    <Reference Include="BetterBurnTime">
+      <HintPath>..\..\..\..\..\Kerbal Space Program 1.4.1 DEV\GameData\BetterBurnTime\BetterBurnTime.dll</HintPath>
     </Reference>
     <Reference Include="System">
       <HintPath>..\..\..\..\..\Kerbal Space Program 1.3.1 DEV\KSP_x64_Data\Managed\System.dll</HintPath>

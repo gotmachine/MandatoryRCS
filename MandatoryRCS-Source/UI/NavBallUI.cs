@@ -18,36 +18,59 @@ namespace MandatoryRCS.UI
     public class NavBallHandler : MonoBehaviour
     {
         #region Mode conversion dicts
-        private Dictionary<SASMode, SASMarkerToggle> modeToToggle = new Dictionary<SASMode, SASMarkerToggle>();
-        private Dictionary<SASMarkerToggle, SASMode> toggleToMode = new Dictionary<SASMarkerToggle, SASMode>();
+        private Dictionary<SASMode, SASButton> modeToToggle = new Dictionary<SASMode, SASButton>();
+        private Dictionary<SASButton, SASMode> toggleToMode = new Dictionary<SASButton, SASMode>();
         #endregion
 
         #region Toggles and buttons
-        private SASMarkerToggle hold;
-        private SASMarkerToggle flyByWire;
-        private SASMarkerToggle maneuver;
-        private SASMarkerToggle killRot;
-        private SASMarkerToggle target;
-        private SASMarkerToggle antiTarget;
-        private SASMarkerToggle prograde;
-        private SASMarkerToggle retrograde;
-        private SASMarkerToggle normal;
-        private SASMarkerToggle antiNormal;
-        private SASMarkerToggle radialIn;
-        private SASMarkerToggle radialOut;
-        private SASMarkerToggle progradeCorrected;
-        private SASMarkerToggle retrogradeCorrected;
-        private SASMarkerToggle parallel;
-        private SASMarkerToggle antiParallel;
+        //private SASMarkerToggle hold;
+        //private SASMarkerToggle flyByWire;
+        //private SASMarkerToggle maneuver;
+        //private SASMarkerToggle killRot;
+        //private SASMarkerToggle target;
+        //private SASMarkerToggle antiTarget;
+        //private SASMarkerToggle prograde;
+        //private SASMarkerToggle retrograde;
+        //private SASMarkerToggle normal;
+        //private SASMarkerToggle antiNormal;
+        //private SASMarkerToggle radialIn;
+        //private SASMarkerToggle radialOut;
+        //private SASMarkerToggle progradeCorrected;
+        //private SASMarkerToggle retrogradeCorrected;
+        //private SASMarkerToggle parallel;
+        //private SASMarkerToggle antiParallel;
 
-        private SASMarkerToggle freeRoll;
-        private SASMarkerButton rollRight;
-        private SASMarkerButton rollLeft;
+        //private SASMarkerToggle freeRoll;
+        //private SASMarkerButton rollRight;
+        //private SASMarkerButton rollLeft;
 
-        private SASMarkerToggle sunTarget;
-        private SASMarkerToggle rcsAuto;
-        private SASMarkerSimple velLimiter;
+        //private SASMarkerToggle sunTarget;
+        //private SASMarkerToggle rcsAuto;
+        //private SASMarkerSimple velLimiter;
         #endregion
+
+        private SASButton hold;
+        private SASButton flyByWire;
+        private SASButton maneuver;
+        private SASButton killRot;
+        private SASButton target;
+        private SASButton antiTarget;
+        private SASButton prograde;
+        private SASButton retrograde;
+        private SASButton normal;
+        private SASButton antiNormal;
+        private SASButton radialIn;
+        private SASButton radialOut;
+        private SASButton parallel;
+        private SASButton antiParallel;
+
+        private SASButton freeRoll;
+        private SASButton rollRight;
+        private SASButton rollLeft;
+
+        private SASButton sunTarget;
+        private SASButton rcsAuto;
+        private SASButton velLimiter;
 
         private NavBallvector autopilotDirection;
 
@@ -71,8 +94,8 @@ namespace MandatoryRCS.UI
         private int velocityLimiter = 15;
 
         private bool hasTarget = true;
-        private bool hasManeuver = true;
         private bool hasVelocity = true;
+        private int controlLevel = 0;
         #endregion
 
         // Reference to the currently piloted vessel
@@ -147,11 +170,18 @@ namespace MandatoryRCS.UI
             if (vesselModule == null || !(vesselModule.currentState == VesselState.PhysicsReady || vesselModule.currentState == VesselState.PackedReady))
                 return;
 
-            // It seems that disabling the autopilot also disable the stock code that revert 
-            // back to the orbit speedDisplayMode if the target is null
-            //if (vesselModule.currentTarget == null && FlightGlobals.speedDisplayMode == SpeedDisplayModes.Target)
-            //    FlightGlobals.SetSpeedMode(SpeedDisplayModes.Orbit);
-            // -> NOW DONE IN SASATTITUDE
+            /*
+                TODO : STOCK INTEGRATION
+                SAS control levels (vesselModule.Vessel.VesselValues.AutopilotSkill)  :
+                    (0) : stability assist      -> killrot
+                    (1) : + pro/retrograde      -> +pro/retrograde, hold, flybywire
+                    (2) : + normal/radial       -> +normal, radial, roll lock
+                    (3) : + target/maneuver     -> +target, maneuver
+                Probe control (vesselModule.Vessel.CurrentControlLevel) :
+                    - partial : change mode is allowed, sas is active
+                    - none : changing mode not allowed, sas is active
+            */
+
 
             // Update navball direction marker
             UpdateFlyByWireMarker();
@@ -161,6 +191,12 @@ namespace MandatoryRCS.UI
             {
                 guiEnabled = vesselModule.autopilotEnabled;
                 mainButtonPanel.SetActive(guiEnabled);
+            }
+
+            // Check the SAS control level
+            if (vesselModule.Vessel.VesselValues.AutopilotSkill.value != controlLevel)
+            {
+                ApplyControlVisibilityRule(vesselModule.Vessel.VesselValues.AutopilotSkill.value);
             }
 
             // has the context changed ?
@@ -175,8 +211,8 @@ namespace MandatoryRCS.UI
                 ApplyTargetVisibilityRule(true);
 
             // Do we have a maneuver node ?
-            if (vesselModule.VesselHasManeuverNode() != maneuver.GetActive())
-                maneuver.SetActive(vesselModule.VesselHasManeuverNode());
+            if (vesselModule.VesselHasManeuverNode() != maneuver.Active)
+                maneuver.Active = vesselModule.VesselHasManeuverNode();
 
             // should velocity modes be enabled ?
             if (vesselModule.hasVelocity != hasVelocity)
@@ -191,7 +227,7 @@ namespace MandatoryRCS.UI
                 SetRollLock(vesselModule.lockedRollMode);
 
             // should the freeroll button be enabled ?
-            if (vesselModule.isRollRefDefined != freeRoll.GetActive())
+            if (vesselModule.isRollRefDefined != freeRoll.Active)
                 SetRollLock(false, !vesselModule.isRollRefDefined);
 
             // Has the velocity limiter value changed ?
@@ -199,15 +235,16 @@ namespace MandatoryRCS.UI
                 CycleVelocityLimiter(false, vesselModule.velocityLimiter);
 
             // Is the sun our target ?
-            if (!sunTarget.GetToggleState() && vesselModule.currentTarget == (ITargetable)Sun.Instance.sun)
-                sunTarget.SetToggleState(true, false);
-
-            else if (sunTarget.GetToggleState() && vesselModule.currentTarget != (ITargetable)Sun.Instance.sun)
-                sunTarget.SetToggleState(false, false);
+            if (!sunTarget.ToggleState && vesselModule.currentTarget == (ITargetable)Sun.Instance.sun)
+                sunTarget.ToggleState = true;
+            else if (sunTarget.ToggleState && vesselModule.currentTarget != (ITargetable)Sun.Instance.sun)
+                sunTarget.ToggleState = false;
 
             // Should RCS auto mode be enabled ?
-            if (rcsAuto.GetToggleState() != vesselModule.rcsAutoMode)
-                rcsAuto.SetToggleState(vesselModule.rcsAutoMode, false);
+            if (rcsAuto.ToggleState != vesselModule.rcsAutoMode)
+                rcsAuto.ToggleState = vesselModule.rcsAutoMode;
+
+
 
             UpdateLockStatus();
 
@@ -230,16 +267,16 @@ namespace MandatoryRCS.UI
             // Update symbol + value sanity check
             switch (velocityLimiter)
             {
-                case 6: velLimiter.SetSprite(spriteVel0); break;
-                case 9: velLimiter.SetSprite(spriteVel1); break;
-                case 12: velLimiter.SetSprite(spriteVel2); break;
-                case 15: velLimiter.SetSprite(spriteVel3); break;
-                case 18: velLimiter.SetSprite(spriteVel4); break;
-                case 21: velLimiter.SetSprite(spriteVel5); break;
-                case 24: velLimiter.SetSprite(spriteVel6); break;
+                case 6: velLimiter.ChangeBackgroundSprite(spriteVel0); break;
+                case 9: velLimiter.ChangeBackgroundSprite(spriteVel1); break;
+                case 12: velLimiter.ChangeBackgroundSprite(spriteVel2); break;
+                case 15: velLimiter.ChangeBackgroundSprite(spriteVel3); break;
+                case 18: velLimiter.ChangeBackgroundSprite(spriteVel4); break;
+                case 21: velLimiter.ChangeBackgroundSprite(spriteVel5); break;
+                case 24: velLimiter.ChangeBackgroundSprite(spriteVel6); break;
                 default:
                     velocityLimiter = 15;
-                    velLimiter.SetSprite(spriteVel3);
+                    velLimiter.ChangeBackgroundSprite(spriteVel3);
                     break;
             }
 
@@ -249,10 +286,10 @@ namespace MandatoryRCS.UI
         private void SetRollLock(bool state, bool setInactive = false)
         {
             lockedRollMode = state;
-            freeRoll.SetToggleState(state, false);
-            freeRoll.SetActive(!setInactive);
-            rollRight.SetActive(state);
-            rollLeft.SetActive(state);
+            freeRoll.ToggleState = state;
+            freeRoll.Active = !setInactive;
+            rollRight.Active = state;
+            rollLeft.Active = state;
             if (setInactive) state = false;
             SetRollAngle(true, state ? 0 : -1);
         }
@@ -262,31 +299,31 @@ namespace MandatoryRCS.UI
             switch (rollAngle)
             {
                 case 0:
-                    freeRoll.SetSymbolSprite(spriteRoll0);
+                    freeRoll.ChangeSymbolSprite(spriteRoll0);
                     break;
                 case 45:
-                    freeRoll.SetSymbolSprite(spriteRoll45);
+                    freeRoll.ChangeSymbolSprite(spriteRoll45);
                     break;
                 case 90:
-                    freeRoll.SetSymbolSprite(spriteRoll90);
+                    freeRoll.ChangeSymbolSprite(spriteRoll90);
                     break;
                 case 135:
-                    freeRoll.SetSymbolSprite(spriteRoll135);
+                    freeRoll.ChangeSymbolSprite(spriteRoll135);
                     break;
                 case 180:
-                    freeRoll.SetSymbolSprite(spriteRoll180);
+                    freeRoll.ChangeSymbolSprite(spriteRoll180);
                     break;
                 case 225:
-                    freeRoll.SetSymbolSprite(spriteRoll135N);
+                    freeRoll.ChangeSymbolSprite(spriteRoll135N);
                     break;
                 case 270:
-                    freeRoll.SetSymbolSprite(spriteRoll90N);
+                    freeRoll.ChangeSymbolSprite(spriteRoll90N);
                     break;
                 case 315:
-                    freeRoll.SetSymbolSprite(spriteRoll45N);
+                    freeRoll.ChangeSymbolSprite(spriteRoll45N);
                     break;
                 default:
-                    freeRoll.SetSymbolSprite(spriteFreeRoll);
+                    freeRoll.ChangeSymbolSprite(spriteFreeRoll);
                     rollAngle = 0;
                     break;
             }
@@ -317,63 +354,64 @@ namespace MandatoryRCS.UI
 
         private void UpdateLockStatus()
         {
-            SASMarkerToggle toggle;
-            modeToToggle.TryGetValue(currentMode, out toggle);
-            toggle.UpdateLockState(vesselModule.rwLockedOnDirection);
+            SASButton button;
+            modeToToggle.TryGetValue(currentMode, out button);
+            button.AltOnState = !vesselModule.rwLockedOnDirection;
         }
+
+        private void ApplyControlVisibilityRule(int controlLevel)
+        {
+            this.controlLevel = controlLevel;
+            foreach (KeyValuePair<SASMode, SASButton> entry in modeToToggle)
+            {
+                entry.Value.Visible = entry.Value.ControlLevel <= controlLevel ? true : false;
+            }
+            //ApplyContextVisibilityRule(vesselModule.autopilotContext);
+        }
+
 
         private void ApplyContextVisibilityRule(SpeedDisplayModes newContext)
         {
-            if (newContext == SpeedDisplayModes.Target || currentContext == SpeedDisplayModes.Target)
-            {
-                bool istarget = newContext == SpeedDisplayModes.Target;
+            bool istarget = newContext == SpeedDisplayModes.Target;
 
-                progradeCorrected.SetVisible(istarget);
-                retrogradeCorrected.SetVisible(istarget);
-                parallel.SetVisible(istarget);
-                antiParallel.SetVisible(istarget);
+            parallel.Visible = parallel.ControlLevel <= controlLevel ? istarget : false;
+            antiParallel.Visible = parallel.ControlLevel <= controlLevel ? istarget : false;
 
-                normal.SetVisible(!istarget);
-                antiNormal.SetVisible(!istarget);
-                radialIn.SetVisible(!istarget);
-                radialOut.SetVisible(!istarget);
-            }
+            radialIn.Visible = parallel.ControlLevel <= controlLevel ? !istarget : false;
+            radialOut.Visible = parallel.ControlLevel <= controlLevel ? !istarget : false;
+
             currentContext = newContext;
         }
 
         private void ApplyTargetVisibilityRule(bool hasTarget)
         {
             this.hasTarget = hasTarget;
-            target.SetActive(hasTarget);
-            antiTarget.SetActive(hasTarget);
-            progradeCorrected.SetActive(hasTarget);
-            retrogradeCorrected.SetActive(hasTarget);
-            parallel.SetActive(hasTarget);
-            antiParallel.SetActive(hasTarget);
+            target.Active = hasTarget;
+            antiTarget.Active = hasTarget;
+            parallel.Active = hasTarget;
+            antiParallel.Active = hasTarget;
         }
 
         private void ApplyVelocityVisibilityRule(bool hasVelocity)
         {
             this.hasVelocity = hasVelocity;
-            prograde.SetActive(hasVelocity);
-            retrograde.SetActive(hasVelocity);
-            progradeCorrected.SetActive(hasVelocity);
-            retrogradeCorrected.SetActive(hasVelocity);
+            prograde.Active = hasVelocity;
+            retrograde.Active = hasVelocity;
         }
 
         private void ChangeMode(SASMode newMode)
         {
             // Disable previously enabled toggle
-            SASMarkerToggle oldToggle;
-            if (modeToToggle.TryGetValue(currentMode, out oldToggle))
+            SASButton oldButton;
+            if (modeToToggle.TryGetValue(currentMode, out oldButton))
             {
-                oldToggle.SetToggleState(false, false);
+                oldButton.ToggleState = false;
             }
 
             // And enable the new one
-            SASMarkerToggle newToggle;
-            modeToToggle.TryGetValue(newMode, out newToggle);
-            newToggle.SetToggleState(true, false);
+            SASButton newButton;
+            modeToToggle.TryGetValue(newMode, out newButton);
+            newButton.ToggleState = true;
 
             // Update UI state var
             currentMode = newMode;
@@ -407,36 +445,42 @@ namespace MandatoryRCS.UI
             // Create all the toggles and buttons
             int xoffset = 0;
             int yoffset = 5;
-            hold = new SASMarkerToggle(this, "Hold", new Vector2(xoffset + 19 + 0, yoffset + 125), mainButtonPanel, spriteHold, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            flyByWire = new SASMarkerToggle(this, "Fly by wire", new Vector2(xoffset + 19 + 25, yoffset + 125), mainButtonPanel, spriteFlyByWire, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            maneuver = new SASMarkerToggle(this, "Maneuver", new Vector2(xoffset + 8 + 0, yoffset + 100), mainButtonPanel, spriteManeuver, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            killRot = new SASMarkerToggle(this, "Kill rotation", new Vector2(xoffset + 8 + 25, yoffset + 100), mainButtonPanel, spriteKillRot, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            target = new SASMarkerToggle(this, "Target", new Vector2(xoffset + 3 + 0, yoffset + 75), mainButtonPanel, spriteTarget, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            antiTarget = new SASMarkerToggle(this, "AntiTarget", new Vector2(xoffset + 3 + 25, yoffset + 75), mainButtonPanel, spriteAntiTarget, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            prograde = new SASMarkerToggle(this, "Prograde", new Vector2(xoffset + 0 + 0, yoffset + 50), mainButtonPanel, spritePrograde, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            retrograde = new SASMarkerToggle(this, "Retrograde", new Vector2(xoffset + 0 + 25, yoffset + 50), mainButtonPanel, spriteRetrograde, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            normal = new SASMarkerToggle(this, "Normal", new Vector2(xoffset + 1 + 0, yoffset + 25), mainButtonPanel, spriteNormal, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            antiNormal = new SASMarkerToggle(this, "AntiNormal", new Vector2(xoffset + 1 + 25, yoffset + 25), mainButtonPanel, spriteAntiNormal, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            radialIn = new SASMarkerToggle(this, "RadialIn", new Vector2(xoffset + 4 + 0, yoffset + 0), mainButtonPanel, spriteRadialIn, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            radialOut = new SASMarkerToggle(this, "RadialOut", new Vector2(xoffset + 4 + 25, yoffset + 0), mainButtonPanel, spriteRadialOut, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            progradeCorrected = new SASMarkerToggle(this, "Prograde corrected", new Vector2(xoffset + 1 + 0, yoffset + 25), mainButtonPanel, spriteProgradeCorrected, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            retrogradeCorrected = new SASMarkerToggle(this, "Retrograde corrected", new Vector2(xoffset + 1 + 25, yoffset + 25), mainButtonPanel, spriteRetrogradeCorrected, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            parallel = new SASMarkerToggle(this, "Parallel", new Vector2(xoffset + 4 + 0, yoffset + 0), mainButtonPanel, spriteParallel, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            antiParallel = new SASMarkerToggle(this, "AntiParallel", new Vector2(xoffset + 4 + 25, yoffset + 0), mainButtonPanel, spriteAntiParallel, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            freeRoll = new SASMarkerToggle(this, "Free roll", new Vector2(xoffset - 3 + 25, yoffset - 30), mainButtonPanel, spriteFreeRoll, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            rollRight = new SASMarkerButton(this, "Roll right", new Vector2(xoffset - 3 + 50, yoffset - 30), mainButtonPanel, spriteRollRight, spriteOff, spriteOnLocked);
-            rollLeft = new SASMarkerButton(this, "Roll left", new Vector2(xoffset - 3 + 0, yoffset - 30), mainButtonPanel, spriteRollLeft, spriteOff, spriteOnLocked);
-            sunTarget = new SASMarkerToggle(this, "Target Sun", new Vector2(xoffset + 9 + 25, yoffset - 55), mainButtonPanel, spriteSun, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            rcsAuto = new SASMarkerToggle(this, "RCS auto", new Vector2(xoffset + 9 + 50, yoffset - 55), mainButtonPanel, spriteRCSAuto, spriteOff, spriteOnLocked, spriteOnNotLocked);
-            velLimiter = new SASMarkerSimple(this, "SAS aggressivity", new Vector2(xoffset + 9 + 0, yoffset - 55), mainButtonPanel, spriteVel3);
+
+            // NOTE: stock control levels :
+            // (0) : stability assist       -> killrot
+            // (1) : +pro / retrograde      -> + pro / retrograde, hold, flybywire
+            // (2) : +normal / radial       -> + normal, radial, roll lock
+            // (3) : +target / maneuver     -> + target, maneuver
+
+            hold                = new SASButton(this, 1, "Hold",             SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 19 + 0,  yoffset + 125), mainButtonPanel, spriteButtonBackground, spriteHold);
+            flyByWire           = new SASButton(this, 1, "Fly by wire",      SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 19 + 25, yoffset + 125), mainButtonPanel, spriteButtonBackground, spriteFlyByWire);
+            maneuver            = new SASButton(this, 3, "Maneuver",         SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 8 + 0,   yoffset + 100), mainButtonPanel, spriteButtonBackground, spriteManeuver);
+            killRot             = new SASButton(this, 0, "Kill rotation",    SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 8 + 25,  yoffset + 100), mainButtonPanel, spriteButtonBackground, spriteKillRot);
+            target              = new SASButton(this, 3, "Target",           SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 3 + 0,   yoffset + 75), mainButtonPanel, spriteButtonBackground, spriteTarget);
+            antiTarget          = new SASButton(this, 3, "AntiTarget",       SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 3 + 25,  yoffset + 75), mainButtonPanel, spriteButtonBackground, spriteAntiTarget);
+            prograde            = new SASButton(this, 1, "Prograde",         SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 0 + 0,   yoffset + 50), mainButtonPanel, spriteButtonBackground, spritePrograde);
+            retrograde          = new SASButton(this, 1, "Retrograde",       SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 0 + 25,  yoffset + 50), mainButtonPanel, spriteButtonBackground, spriteRetrograde);
+            normal              = new SASButton(this, 2, "Normal",           SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 1 + 0,   yoffset + 25), mainButtonPanel, spriteButtonBackground, spriteNormal);
+            antiNormal          = new SASButton(this, 2, "AntiNormal",       SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 1 + 25,  yoffset + 25), mainButtonPanel, spriteButtonBackground, spriteAntiNormal);
+            radialIn            = new SASButton(this, 2, "RadialIn",         SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 4 + 0,   yoffset + 0), mainButtonPanel, spriteButtonBackground, spriteRadialIn);
+            radialOut           = new SASButton(this, 2, "RadialOut",        SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 4 + 25,  yoffset + 0), mainButtonPanel, spriteButtonBackground, spriteRadialOut);
+            parallel            = new SASButton(this, 3, "Parallel",         SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 4 + 0,   yoffset + 0), mainButtonPanel, spriteButtonBackground, spriteParallel);
+            antiParallel        = new SASButton(this, 3, "AntiParallel",     SASButton.ButtonType.ToggleThreeState, new Vector2(xoffset + 4 + 25,  yoffset + 0), mainButtonPanel, spriteButtonBackground, spriteAntiParallel);
+            freeRoll            = new SASButton(this, 2, "Free roll",        SASButton.ButtonType.ToggleTwoState,   new Vector2(xoffset - 3 + 25,  yoffset - 30), mainButtonPanel, spriteButtonBackground, spriteFreeRoll);
+            rollRight           = new SASButton(this, 2, "Roll right",       SASButton.ButtonType.ButtonSymbol,     new Vector2(xoffset - 3 + 50,  yoffset - 30), mainButtonPanel, spriteButtonBackground, spriteRollRight);
+            rollLeft            = new SASButton(this, 2, "Roll left",        SASButton.ButtonType.ButtonSymbol,     new Vector2(xoffset - 3 + 0,   yoffset - 30), mainButtonPanel, spriteButtonBackground, spriteRollLeft);
+            sunTarget           = new SASButton(this, 0, "Target Sun",       SASButton.ButtonType.ToggleTwoState,   new Vector2(xoffset + 9 + 25,  yoffset - 55), mainButtonPanel, spriteButtonBackground, spriteSun);
+            rcsAuto             = new SASButton(this, 0, "RCS auto",         SASButton.ButtonType.ToggleTwoState,   new Vector2(xoffset + 9 + 50,  yoffset - 55), mainButtonPanel, spriteButtonBackground, spriteRCSAuto);
+            velLimiter          = new SASButton(this, 0, "SAS aggressivity", SASButton.ButtonType.ButtonBasic,      new Vector2(xoffset + 9 + 0,   yoffset - 55), mainButtonPanel, spriteVel3);
 
             // Create SASMode<-->Toggle dictionnaries
             CreateDictionnaries();
 
             guiEnabled = true;
 
-            // We only need to set mode and context, everything else will be updated in the lateUpdate
+            // We only need to set mode and visibility rules, everything else will be updated in the lateUpdate
             ChangeMode(vesselModule.autopilotMode);
+            ApplyControlVisibilityRule(vesselModule.Vessel.VesselValues.AutopilotSkill.value);
             ApplyContextVisibilityRule(vesselModule.autopilotContext);
 
             autopilotDirection = new NavBallvector("autopilotDirection", navBallVectorsPivot, navBall, spriteFlyByWireNavBall, new Color32(30,216,40,255), true);
@@ -459,8 +503,6 @@ namespace MandatoryRCS.UI
             modeToToggle.Add(SASMode.AntiNormal, antiNormal);
             modeToToggle.Add(SASMode.RadialIn, radialIn);
             modeToToggle.Add(SASMode.RadialOut, radialOut);
-            modeToToggle.Add(SASMode.ProgradeCorrected, progradeCorrected);
-            modeToToggle.Add(SASMode.RetrogradeCorrected, retrogradeCorrected);
             modeToToggle.Add(SASMode.Parallel, parallel);
             modeToToggle.Add(SASMode.AntiParallel, antiParallel);
 
@@ -476,65 +518,23 @@ namespace MandatoryRCS.UI
             toggleToMode.Add(antiNormal, SASMode.AntiNormal );
             toggleToMode.Add(radialIn, SASMode.RadialIn );
             toggleToMode.Add(radialOut, SASMode.RadialOut );
-            toggleToMode.Add(progradeCorrected, SASMode.ProgradeCorrected );
-            toggleToMode.Add(retrogradeCorrected, SASMode.RetrogradeCorrected );
             toggleToMode.Add(parallel, SASMode.Parallel );
             toggleToMode.Add(antiParallel, SASMode.AntiParallel );
         }
         #endregion
 
         #region UI -> VesselModule
-        public void ToggleClick(SASMarkerToggle toggle, bool enabled)
+        public void ButtonClick(SASButton button)
         {
-            if (toggle == freeRoll)
-            {
-                vesselModule.lockedRollMode = enabled;
-                SetRollAngle(true, enabled ? 0 : -1);
-                vesselModule.autopilotModeHasChanged = true;
-            }
-            else if (toggle == rcsAuto)
-            {
-                vesselModule.rcsAutoMode = enabled;
-            }
-            else if (toggle == sunTarget)
-            {
-                vesselModule.SetTarget(enabled ? Sun.Instance.sun : null, true, true);
-            }
-            else
-            {
-                SASMode newMode;
+            if (vesselModule.Vessel.CurrentControlLevel == Vessel.ControlLevel.NONE) return;
 
-                if (!toggleToMode.TryGetValue(toggle, out newMode)) return;
-
-                if (newMode != currentMode)
-                {
-                    vesselModule.autopilotMode = newMode;
-                    vesselModule.autopilotModeHasChanged = true;
-                }
-                else
-                {
-                    if (toggle.GetToggleState() == false)
-                    {
-                        toggle.SetToggleState(true, false);
-                    }
-                    
-                    if (newMode == SASMode.FlyByWire)
-                    {
-                        vesselModule.flyByWire = false;
-                        vesselModule.rwLockedOnDirection = false;
-                    }
-                }
-            }
-        }
-
-        public void ButtonClick(SASMarker button)
-        {
             if (button == velLimiter)
             {
                 CycleVelocityLimiter(true);
             }
-            else if (lockedRollMode)
+            else if (button == rollRight || button == rollLeft)
             {
+
                 int newRoll = currentRoll;
                 if (button == rollRight)
                 {
@@ -547,6 +547,44 @@ namespace MandatoryRCS.UI
                     newRoll -= 45;
                     if (newRoll < 0) newRoll = 315;
                     SetRollAngle(true, newRoll);
+                }
+            }
+            else if (button == freeRoll)
+            {
+                button.ToggleState = !button.ToggleState;
+                vesselModule.lockedRollMode = button.ToggleState;
+                SetRollAngle(true, button.ToggleState ? 0 : -1);
+                vesselModule.autopilotModeHasChanged = true;
+            }
+            else if (button == rcsAuto)
+            {
+                button.ToggleState = !button.ToggleState;
+                vesselModule.rcsAutoMode = button.ToggleState;
+            }
+            else if (button == sunTarget)
+            {
+                button.ToggleState = !button.ToggleState;
+                vesselModule.SetTarget(button.ToggleState ? Sun.Instance.sun : null, true, true);
+            }
+            else
+            {
+                SASMode newMode;
+
+                if (!toggleToMode.TryGetValue(button, out newMode)) return;
+
+                if (newMode != currentMode)
+                {
+                    button.ToggleState = true;
+                    vesselModule.autopilotMode = newMode;
+                    vesselModule.autopilotModeHasChanged = true;
+                }
+                else
+                {
+                    if (newMode == SASMode.FlyByWire)
+                    {
+                        vesselModule.flyByWire = false;
+                        vesselModule.rwLockedOnDirection = false;
+                    }
                 }
             }
         }
