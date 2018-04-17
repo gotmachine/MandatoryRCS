@@ -41,13 +41,17 @@ As a side benefit, the plugin also fix the "timewarps rotation stop" stock behav
 #### Customization
 - Features can be enabled, disabled or tweaked in the ingame "Difficulty Settings" menu.
 
-## Instructions & notes
-
 #### Download & source
 
 I highly recommend that you grab it from **CKAN** !
 
 But you can also get the [latest release and source](https://github.com/gotmachine/MandatoryRCS/releases/latest) from github
+
+## Instructions & notes
+
+#### User manual
+
+
 
 #### Requirements
 This **requires the ModuleManager plugin** to work. You can download it [here](http://forum.kerbalspaceprogram.com/index.php?/topic/50533-121-module-manager-275-november-29th-2016-better-late-than-never/)
@@ -80,6 +84,7 @@ So public domain, feel free to do anything, especially updating this plugin if I
 - When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require large modifications.
 
 #### v2.0 beta 1 for KSP 1.4.2
+Beta release with extra logging of debug information the the KSP.log
 - Complete rewrite of the whole plugin
 - The reaction wheels nerf has been simplified, control variations are no more since this was confusing and not very relevant
 - Target persistence
