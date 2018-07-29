@@ -187,6 +187,7 @@ namespace MandatoryRCS.Lib
                 );
         }
 
+
         public static void GetVesselMoI(Vessel vessel, out Vector3d MoI)
         {
             /// <summary>
@@ -197,7 +198,7 @@ namespace MandatoryRCS.Lib
             /// don't make sense when used with "control from here".  (It doesn't merely rotate the reference frame, as one
             /// would expect "control from here" to do.)
             /// </summary>   
-            /// TODO: Check this again after each KSP stock release to see if it's been changed or not.
+            /// TODO: This has been fixed in KSP 1.4.3 !
 
             // Found that the default rotation has top pointing forward, forward pointing down, and right pointing starboard.
             // This fixes that rotation.

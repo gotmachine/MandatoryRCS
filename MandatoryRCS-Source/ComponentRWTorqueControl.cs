@@ -40,14 +40,14 @@ namespace MandatoryRCS
             float requestedTorqueFactor = 0;
 
             // On pilot rotation requests or if the SAS is disabled, use nerfed torque output
-            if (vesselModule.pilotRotationInput || !vesselModule.autopilotEnabled)
+            if (vesselModule.pilotRotationInput || !vesselModule.sasEnabled)
             {
                 mode = TorqueMode.nerfed;
                 vesselModule.rwLockedOnDirection = false;
             }
 
             // if the SAS is in KillRot mode, use stock torque
-            else if (vesselModule.autopilotMode == SASMode.KillRot)
+            else if (vesselModule.sasMode == SASMode.KillRot)
             {
                 mode = TorqueMode.stock;
                 vesselModule.rwLockedOnDirection = true;
@@ -56,7 +56,7 @@ namespace MandatoryRCS
             {
                 // SAS is in target mode, enable full torque if the target is near. 
                 float orientationDiff;
-                if (vesselModule.lockedRollMode)
+                if (vesselModule.sasLockedRollMode)
                 {
                     orientationDiff = Quaternion.Angle(vesselModule.sasAttitudeWanted, vessel.GetTransform().rotation * Quaternion.Euler(-90, 0, 0));
                 }

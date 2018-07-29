@@ -68,6 +68,9 @@
       <HintPath>..\..\..\..\..\Kerbal Space Program 1.4.1 DEV\KSP_x64_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="TODO.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll"

@@ -141,6 +141,9 @@ namespace MandatoryRCS.UI
 
         private void LateUpdate()
         {
+            // We don't do anything for EVA kerbals
+            if (vesselModule.Vessel.isEVA) return;
+
             // Get references to the navball GameObjects, if they are still null abort
             if (navBall == null)
             {
@@ -187,9 +190,9 @@ namespace MandatoryRCS.UI
             UpdateFlyByWireMarker();
 
             // Hide/show the whole SAS panel according to SAS button state
-            if (vesselModule.autopilotEnabled != mainButtonPanel.activeInHierarchy)
+            if (vesselModule.sasEnabled != mainButtonPanel.activeInHierarchy)
             {
-                guiEnabled = vesselModule.autopilotEnabled;
+                guiEnabled = vesselModule.sasEnabled;
                 mainButtonPanel.SetActive(guiEnabled);
             }
 
@@ -200,8 +203,8 @@ namespace MandatoryRCS.UI
             }
 
             // has the context changed ?
-            if (vesselModule.autopilotContext != currentContext)
-                ApplyContextVisibilityRule(vesselModule.autopilotContext);
+            if (vesselModule.sasContext != currentContext)
+                ApplyContextVisibilityRule(vesselModule.sasContext);
 
             // Do we still have a target ?
             if (vesselModule.currentTarget == null && hasTarget)
@@ -219,20 +222,20 @@ namespace MandatoryRCS.UI
                 ApplyVelocityVisibilityRule(vesselModule.hasVelocity);
 
             // has the mode changed ?
-            if (vesselModule.autopilotMode != currentMode)
-                ChangeMode(vesselModule.autopilotMode);
+            if (vesselModule.sasMode != currentMode)
+                ChangeMode(vesselModule.sasMode);
 
             // has the roll mode changed ?
-            if (vesselModule.lockedRollMode != lockedRollMode)
-                SetRollLock(vesselModule.lockedRollMode);
+            if (vesselModule.sasLockedRollMode != lockedRollMode)
+                SetRollLock(vesselModule.sasLockedRollMode);
 
             // should the freeroll button be enabled ?
-            if (vesselModule.isRollRefDefined != freeRoll.Active)
-                SetRollLock(false, !vesselModule.isRollRefDefined);
+            if (vesselModule.sasRollRefDefined != freeRoll.Active)
+                SetRollLock(false, !vesselModule.sasRollRefDefined);
 
             // Has the velocity limiter value changed ?
-            if (vesselModule.velocityLimiter != velocityLimiter)
-                CycleVelocityLimiter(false, vesselModule.velocityLimiter);
+            if (vesselModule.sasVelocityLimiter != velocityLimiter)
+                CycleVelocityLimiter(false, vesselModule.sasVelocityLimiter);
 
             // Is the sun our target ?
             if (!sunTarget.ToggleState && vesselModule.currentTarget == (ITargetable)Sun.Instance.sun)
@@ -241,8 +244,8 @@ namespace MandatoryRCS.UI
                 sunTarget.ToggleState = false;
 
             // Should RCS auto mode be enabled ?
-            if (rcsAuto.ToggleState != vesselModule.rcsAutoMode)
-                rcsAuto.ToggleState = vesselModule.rcsAutoMode;
+            if (rcsAuto.ToggleState != vesselModule.sasRcsAutoMode)
+                rcsAuto.ToggleState = vesselModule.sasRcsAutoMode;
 
 
 
@@ -280,7 +283,7 @@ namespace MandatoryRCS.UI
                     break;
             }
 
-            if (updateModuleValue) vesselModule.velocityLimiter = velocityLimiter;
+            if (updateModuleValue) vesselModule.sasVelocityLimiter = velocityLimiter;
         }
 
         private void SetRollLock(bool state, bool setInactive = false)
@@ -332,14 +335,14 @@ namespace MandatoryRCS.UI
 
             if (updateModuleValue)
             {
-                vesselModule.currentRoll = currentRoll;
-                vesselModule.autopilotModeHasChanged = true;
+                vesselModule.sasRollOffset = currentRoll;
+                vesselModule.sasModeHasChanged = true;
             }
         }
 
         private void UpdateFlyByWireMarker()
         {
-            if (vesselModule.autopilotMode == SASMode.FlyByWire || vesselModule.autopilotMode == SASMode.Hold)
+            if (vesselModule.sasMode == SASMode.FlyByWire || vesselModule.sasMode == SASMode.Hold)
             {
                 if (!autopilotDirection.IsVisible())
                     autopilotDirection.SetVisible(true);
@@ -479,9 +482,9 @@ namespace MandatoryRCS.UI
             guiEnabled = true;
 
             // We only need to set mode and visibility rules, everything else will be updated in the lateUpdate
-            ChangeMode(vesselModule.autopilotMode);
+            ChangeMode(vesselModule.sasMode);
             ApplyControlVisibilityRule(vesselModule.Vessel.VesselValues.AutopilotSkill.value);
-            ApplyContextVisibilityRule(vesselModule.autopilotContext);
+            ApplyContextVisibilityRule(vesselModule.sasContext);
 
             autopilotDirection = new NavBallvector("autopilotDirection", navBallVectorsPivot, navBall, spriteFlyByWireNavBall, new Color32(30,216,40,255), true);
             UpdateFlyByWireMarker();
@@ -552,14 +555,14 @@ namespace MandatoryRCS.UI
             else if (button == freeRoll)
             {
                 button.ToggleState = !button.ToggleState;
-                vesselModule.lockedRollMode = button.ToggleState;
+                vesselModule.sasLockedRollMode = button.ToggleState;
                 SetRollAngle(true, button.ToggleState ? 0 : -1);
-                vesselModule.autopilotModeHasChanged = true;
+                vesselModule.sasModeHasChanged = true;
             }
             else if (button == rcsAuto)
             {
                 button.ToggleState = !button.ToggleState;
-                vesselModule.rcsAutoMode = button.ToggleState;
+                vesselModule.sasRcsAutoMode = button.ToggleState;
             }
             else if (button == sunTarget)
             {
@@ -569,23 +572,10 @@ namespace MandatoryRCS.UI
             else
             {
                 SASMode newMode;
-
                 if (!toggleToMode.TryGetValue(button, out newMode)) return;
 
-                if (newMode != currentMode)
-                {
-                    button.ToggleState = true;
-                    vesselModule.autopilotMode = newMode;
-                    vesselModule.autopilotModeHasChanged = true;
-                }
-                else
-                {
-                    if (newMode == SASMode.FlyByWire)
-                    {
-                        vesselModule.flyByWire = false;
-                        vesselModule.rwLockedOnDirection = false;
-                    }
-                }
+                button.ToggleState = true;
+                vesselModule.SetSASMode(newMode);
             }
         }
         #endregion

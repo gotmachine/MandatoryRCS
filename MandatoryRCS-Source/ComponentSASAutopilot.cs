@@ -83,7 +83,7 @@ namespace MandatoryRCS
                 rotDirection.x * Mathf.Deg2Rad
                 );
 
-            if (!vesselModule.lockedRollMode) { error.y = 0; }
+            if (!vesselModule.sasLockedRollMode) { error.y = 0; }
 
             Vector3d err = error + vesselModule.angularDistanceToStop;
             err = new Vector3d(
@@ -109,9 +109,9 @@ namespace MandatoryRCS
 
             // angular velocity limit:
             // vesselModule.velocityLimiter * 0.01 = kWlimit in MechJeb
-            var Wlimit = new Vector3d(Math.Sqrt(NormFactor.x * Math.PI * vesselModule.velocityLimiter * 0.01),
-                Math.Sqrt(NormFactor.y * Math.PI * vesselModule.velocityLimiter * 0.01),
-                Math.Sqrt(NormFactor.z * Math.PI * vesselModule.velocityLimiter * 0.01));
+            var Wlimit = new Vector3d(Math.Sqrt(NormFactor.x * Math.PI * vesselModule.sasVelocityLimiter * 0.01),
+                Math.Sqrt(NormFactor.y * Math.PI * vesselModule.sasVelocityLimiter * 0.01),
+                Math.Sqrt(NormFactor.z * Math.PI * vesselModule.sasVelocityLimiter * 0.01));
 
             pidAction = pid.Compute(err, omega, Wlimit);
 
@@ -235,16 +235,16 @@ namespace MandatoryRCS
 
                 VesselModuleMandatoryRCS vm = data.host.vesselModules.OfType<VesselModuleMandatoryRCS>().First();
 
-                if (vm.autopilotPersistentModeLock && 
-                    (vm.autopilotMode == SASMode.Prograde ||
-                    vm.autopilotMode == SASMode.Retrograde ||
-                    vm.autopilotMode == SASMode.Normal ||
-                    vm.autopilotMode == SASMode.AntiNormal ||
-                    vm.autopilotMode == SASMode.RadialIn ||
-                    vm.autopilotMode == SASMode.RadialOut))
+                if (vm.sasPersistentModeLock && 
+                    (vm.sasMode == SASMode.Prograde ||
+                    vm.sasMode == SASMode.Retrograde ||
+                    vm.sasMode == SASMode.Normal ||
+                    vm.sasMode == SASMode.AntiNormal ||
+                    vm.sasMode == SASMode.RadialIn ||
+                    vm.sasMode == SASMode.RadialOut))
                 {
-                    vm.autopilotPersistentModeLock = false;
-                    vm.autopilotMode = SASMode.KillRot;
+                    vm.sasPersistentModeLock = false;
+                    vm.sasMode = SASMode.KillRot;
                 }
             }
             else if (data.host.protoVessel.vesselModules != null)

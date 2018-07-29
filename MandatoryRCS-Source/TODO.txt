@@ -1,0 +1,39 @@
+﻿- Stock autopilot modes watcher
+- Stock PID switch -> added to the velocity limiter cycler
+- RCS global throttle -> "R" button + default throttle keys ?
+
+Reaction wheels nerf revamp :
+ The idea would be to have three types of non-RCS control systems :
+
+    Magnetorquers :
+        Provide only stabilization (Kill Rotation and SAS lock), can't be used to initiate a rotation.
+        Very low mass, available as an optional module in existing parts (reaction wheels, probe cores, pods...)
+        Can be used as a passive (no EC consumed) or active (EC consumed) system for extra torque power.
+        The available torque depend on the distance to the main body (lower orbit = more torque)
+    Reaction Wheels :
+        Provide large stabilization torque and low active torque (like the current nerf does)
+        Replace the stock module
+        The active torque would be subject to a realistic saturation mechanism
+        The stabilization torque would be subject to a non-realistic saturation mechanism (the saturation would magically vanish when the wheels are not used).
+    Control Moment Gyroscope :
+        Provide large stabilization torque and medium active torque.
+        Heavier and bulkier than current parts, also larger EC consumption.
+        Would come in a set of all-in-one configurable inline parts with optional EC/MP storage, integrated RCS thrusters, probe core...
+        Same saturation mechanism, but the active torque saturation would induce a permanent EC consumption.
+
+To avoid having to micro-manage the saturation :
+
+    The saturation would be calculated vessel-wide, not per part, and a colour-gradient saturation indicator would be added somewhere on the navball for the two types of saturation.
+    For the "realistic" saturation, an auto-desaturation SAS button would be added. By toggling it, the SAS would let the wheels desaturate. Doing so would produce a torque which rate would be auto-adjusted so the onboard magnetorquers and RCS thrusters (if the auto-RCS button is toggled) can counteract this torque.
+
+The design goals are :
+
+    To give the player the ability to choose between a RCS or non-RCS attitude system depending on the mission profile
+    Balance these options so neither is overpowered
+    Still keep the "magical free torque" but avoid the "look I can stand on a 45° slope" situation
+    Not to add to much complexity and keep the gameplay simple.
+
+Implementation :
+active / stabilization torque : we need to separate the two at the partmodule level so we can register the saturation independently
+Ideally we should have 2 seperate FlightCtrlStates, 2 seperate availabletorque, and 2 PID controllers ?
+

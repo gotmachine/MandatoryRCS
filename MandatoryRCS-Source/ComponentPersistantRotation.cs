@@ -15,7 +15,7 @@ namespace MandatoryRCS
             if (vesselModule.currentState == VesselState.PackedReady || vesselModule.currentState == VesselState.PackedLoadingFirstFrameReady)
             {
                 // If the SAS is locked, we keep the vessel rotated toward the SAS selection
-                if (vesselModule.autopilotPersistentModeLock)
+                if (vesselModule.sasPersistentModeLock)
                 {
                     // We are calculating the SAS attitude in Update(), so we need to make sure Update() has run at least once before doing anything.
                     // TODO : probably due to the Update() situation, the movement is choppy, this need to be tested with a heavy load/low fps situation
@@ -52,11 +52,11 @@ namespace MandatoryRCS
         public override void ComponentUpdate()
         {
             // We rotate all packed vessels
-            if (vesselModule.autopilotPersistentModeLock 
+            if (vesselModule.sasPersistentModeLock 
                 && vesselModule.ready
                 && (vesselModule.currentState == VesselState.PackedReady || vesselModule.currentState == VesselState.PackedLoadingFirstFrameReady))
             {
-                if (vesselModule.lockedRollMode)
+                if (vesselModule.sasLockedRollMode)
                 {
                     SetVesselAttitude(vesselModule.sasAttitudeWanted * Quaternion.Euler(90, 0, 0));
                 }

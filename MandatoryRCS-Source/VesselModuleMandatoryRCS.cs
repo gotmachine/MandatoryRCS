@@ -53,36 +53,36 @@ namespace MandatoryRCS
         #region SAS
         // True if we are keeping the vessel oriented toward the SAS target
         [KSPField(isPersistant = true)]
-        public bool autopilotEnabled = false;
+        public bool sasEnabled = false;
 
         [KSPField(isPersistant = true)]
-        public bool autopilotPersistentModeLock = false;
+        public bool sasPersistentModeLock = false;
 
         [KSPField(isPersistant = true)]
-        public SASMode autopilotMode = SASMode.KillRot;
+        public SASMode sasMode = SASMode.KillRot;
 
         [KSPField(isPersistant = true)]
-        public FlightGlobals.SpeedDisplayModes autopilotContext = FlightGlobals.SpeedDisplayModes.Orbit;
+        public FlightGlobals.SpeedDisplayModes sasContext = FlightGlobals.SpeedDisplayModes.Orbit;
 
         [KSPField(isPersistant = true)]
-        public bool lockedRollMode = false;
+        public bool sasLockedRollMode = false;
 
         [KSPField(isPersistant = true)]
-        public int currentRoll = 0;
+        public int sasRollOffset = 0;
 
         [KSPField(isPersistant = true)]
-        public bool rcsAutoMode = false;
+        public bool sasRcsAutoMode = false;
 
         [KSPField(isPersistant = true)]
-        public int velocityLimiter = 15;
+        public int sasVelocityLimiter = 15;
 
         public Quaternion sasAttitudeWanted;
         public Vector3d sasDirectionWanted;
         public Vector3d sasRollReference;
-        public bool isRollRefDefined = true;
+        public bool sasRollRefDefined = true;
         public bool hasVelocity = false;
-        public bool flyByWire = false;
-        public bool autopilotModeHasChanged = false;
+        public bool sasFlyByWire = false;
+        public bool sasModeHasChanged = false;
         public bool hasSAS = false;
 
         private VesselAutopilot.VesselSAS stockSAS;
@@ -113,15 +113,26 @@ namespace MandatoryRCS
 
         protected override void OnStart()
         {
-            persistentRotation = new ComponentPersistantRotation();
-            sasAutopilot = new ComponentSASAutopilot();
-            sasAttitude = new ComponentSASAttitude();
-            torqueControl = new ComponentRWTorqueControl();
+            // For EVA kerbals, debris and flags, we only do persistent rotation, no need to add the other components
+            if (vessel.vesselType == VesselType.Debris || vessel.vesselType == VesselType.Flag || vessel.vesselType == VesselType.EVA)
+            {
+                persistentRotation = new ComponentPersistantRotation();
+                components.Add(persistentRotation);
+            }
+            else
+            {
+                persistentRotation = new ComponentPersistantRotation();
+                sasAutopilot = new ComponentSASAutopilot();
+                sasAttitude = new ComponentSASAttitude();
+                torqueControl = new ComponentRWTorqueControl();
 
-            components.Add(persistentRotation);
-            components.Add(sasAutopilot);
-            components.Add(sasAttitude);
-            components.Add(torqueControl);
+                components.Add(persistentRotation);
+                components.Add(sasAutopilot);
+                components.Add(sasAttitude);
+                components.Add(torqueControl);
+            }
+
+            stockSAS = new VesselAutopilot.VesselSAS(vessel);
 
             foreach (ComponentBase component in components)
             {
@@ -130,26 +141,24 @@ namespace MandatoryRCS
                 component.Start();
             }
 
-            stockSAS = new VesselAutopilot.VesselSAS(vessel);
-
             // Note : OnPreAutopilotUpdate seems to be called AFTER the vesselModule FixedUpdate();
             vessel.OnPreAutopilotUpdate -= OnPreAutopilotUpdate;
             vessel.OnPreAutopilotUpdate += OnPreAutopilotUpdate;
-            //vessel.OnPostAutopilotUpdate -= OnPostAutopilotUpdate;
-            //vessel.OnPostAutopilotUpdate += OnPostAutopilotUpdate;
             currentState = VesselState.Unloaded;
             callbackFirstFrameSkipped = false;
         }
 
-
-
         private void OnPreAutopilotUpdate(FlightCtrlState s)
         {
-            // Disable stock SAS, we can't use it because the vessel.Autopilot will fight us by giving directions and resetting PID
-            vessel.Autopilot.SAS.DisconnectFlyByWire();
+            // Excepted for EVA kerbals, disable stock SAS, we can't use it because the vessel.Autopilot will fight us by giving directions and resetting PID
+            if (!vessel.isEVA)
+            {
+                vessel.Autopilot.SAS.DisconnectFlyByWire();
+            }
 
             VesselModuleUpdate(true, s);
 
+            // Reimplementation of the stock SAS in case the player want to use it instead of MechJeb SAS
             if (useStockSAS)
             {
                 stockSAS.ConnectFlyByWire(false);
@@ -206,7 +215,7 @@ namespace MandatoryRCS
                 torqueControl.ComponentFixedUpdate();
 
                 // Update the autopilot action
-                if (autopilotEnabled && flightCtrlState != null)
+                if (sasEnabled && flightCtrlState != null)
                 {
                     // We know how reaction wheels will behave, set RCS auto mode
                     // TODO : check if we need to reset the SAS PID on RCS enable/disable-> sasAutopilot.Reset()
@@ -214,8 +223,8 @@ namespace MandatoryRCS
 
                     if (useStockSAS)
                     {
-                        stockSAS.lockedMode = autopilotMode == SASMode.KillRot;
-                        stockSAS.SetTargetOrientation(sasDirectionWanted, autopilotModeHasChanged);
+                        stockSAS.lockedMode = sasMode == SASMode.KillRot;
+                        stockSAS.SetTargetOrientation(sasDirectionWanted, sasModeHasChanged);
                     }
                     else
                     {
@@ -226,13 +235,13 @@ namespace MandatoryRCS
                         VesselPhysics.GetVesselAvailableTorque(vessel, MOI, out torqueAvailable, out torqueReactionSpeed, out angularDistanceToStop);
 
                         // It's time to calculate how the autopilot should steer the vessel;
-                        if (autopilotModeHasChanged) { sasAutopilot.Reset(); }
+                        if (sasModeHasChanged) { sasAutopilot.Reset(); }
                         sasAutopilot.ComponentFixedUpdate();
                     }
                 }
             }
             // Reset the SAS mode change flag
-            if (autopilotModeHasChanged) { autopilotModeHasChanged = false; }
+            if (sasModeHasChanged) { sasModeHasChanged = false; }
 
 
             
@@ -241,7 +250,7 @@ namespace MandatoryRCS
         private void Update()
         {
             if (currentState == VesselState.Unloaded || currentState == VesselState.PackedLoadingUnloadedNotReady) return;
-            if (autopilotModeHasChanged || !hasSAS) autopilotPersistentModeLock = false;
+            if (sasModeHasChanged || !hasSAS) sasPersistentModeLock = false;
             if (hasSAS) sasAttitude.ComponentUpdate();
 
             // Ensure we have done all this at last once
@@ -272,7 +281,7 @@ namespace MandatoryRCS
 
         private void RCSAutoSet()
         {
-            if (rcsAutoMode)
+            if (sasRcsAutoMode)
             {
                 bool enabled;
                 enabled = (!rwLockedOnDirection || pilotTranslationInput) && vessel.staticPressurekPa < 10;
@@ -358,7 +367,7 @@ namespace MandatoryRCS
             {
                 if (PlayerControlled())
                 {
-                    if (currentTarget != FlightGlobals.fetch.VesselTarget || autopilotContext != FlightGlobals.speedDisplayMode)
+                    if (currentTarget != FlightGlobals.fetch.VesselTarget || sasContext != FlightGlobals.speedDisplayMode)
                     {
                         if (vesselTargetDirtyFirstFrame)
                         {
@@ -367,7 +376,7 @@ namespace MandatoryRCS
                             // We will wait a bit for this to happen, and after a few frames we will consider that something has gone wrong
                             // and sync the stock target to ours.
                             targetDirtyFrameCounter = 0;
-                            Debug.Log("[MRCS] [" + vessel.vesselName + "] Waiting for target to be resumed. Saved target : " + (currentTarget == null ? "null" : currentTarget.GetDisplayName()) + " Saved context : " + autopilotContext);
+                            Debug.Log("[MRCS] [" + vessel.vesselName + "] Waiting for target to be resumed. Saved target : " + (currentTarget == null ? "null" : currentTarget.GetDisplayName()) + " Saved context : " + sasContext);
                             Debug.Log("[MRCS] [" + vessel.vesselName + "] Stock target : " + (FlightGlobals.fetch.VesselTarget == null ? "null" : FlightGlobals.fetch.VesselTarget.GetDisplayName()) + " Stock context : " + FlightGlobals.speedDisplayMode);
 
                             // Theorically we have prevented the stock code from saving the target if the Sun was selected
@@ -376,7 +385,7 @@ namespace MandatoryRCS
                             if ((Object)currentTarget == Sun.Instance.sun)
                             {
                                 SetTarget(Sun.Instance.sun, true, false);
-                                if (autopilotContext == SpeedDisplayModes.Target)
+                                if (sasContext == SpeedDisplayModes.Target)
                                 {
                                     SetContext(SpeedDisplayModes.Target, true, false);
                                 }
@@ -386,7 +395,7 @@ namespace MandatoryRCS
 
                         if (targetDirtyFrameCounter > 10)
                         {
-                            Debug.Log("[MRCS] [" + vessel.vesselName + "] WARNING, saved target : " + (currentTarget == null ? "null" : currentTarget.GetDisplayName()) + " Saved context : " + autopilotContext);
+                            Debug.Log("[MRCS] [" + vessel.vesselName + "] WARNING, saved target : " + (currentTarget == null ? "null" : currentTarget.GetDisplayName()) + " Saved context : " + sasContext);
                             Debug.Log("[MRCS] [" + vessel.vesselName + "] WARNING, stock target : " + (FlightGlobals.fetch.VesselTarget == null ? "null" : FlightGlobals.fetch.VesselTarget.GetDisplayName()) + " Stock context : " + FlightGlobals.speedDisplayMode);
                             vesselTargetDirty = false;
                             targetDirtyFrameCounter = -1;
@@ -411,8 +420,8 @@ namespace MandatoryRCS
                 }
             }
 
-            // Do only persistent rotation for debris & flags...
-            if (vessel.vesselType == VesselType.Debris || vessel.vesselType == VesselType.Flag)
+            // EVA Kerbals, debris & flag : do only persistent rotation
+            if (vessel.vesselType == VesselType.Debris || vessel.vesselType == VesselType.Flag || vessel.vesselType == VesselType.EVA)
             {
                 hasSAS = false;
             }
@@ -430,6 +439,63 @@ namespace MandatoryRCS
         public bool VesselHasManeuverNode()
         {
             return vessel.patchedConicSolver != null && vessel.patchedConicSolver.maneuverNodes.Count > 0;
+        }
+
+        public void SetSASMode(SASMode mode)
+        {
+            if (mode != sasMode)
+            {
+                sasModeHasChanged = true;
+                sasPersistentModeLock = false;
+                sasMode = mode;
+                switch (sasMode)
+                {
+                    case SASMode.Hold:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.StabilityAssist);
+                        break;
+                    case SASMode.Maneuver:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.Maneuver);
+                        break;
+                    case SASMode.KillRot:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.StabilityAssist);
+                        break;
+                    case SASMode.Target:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.Target);
+                        break;
+                    case SASMode.AntiTarget:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.AntiTarget);
+                        break;
+                    case SASMode.Prograde:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.Prograde);
+                        break;
+                    case SASMode.Retrograde:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.Retrograde);
+                        break;
+                    case SASMode.Normal:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.Normal);
+                        break;
+                    case SASMode.AntiNormal:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.Antinormal);
+                        break;
+                    case SASMode.RadialIn:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.RadialIn);
+                        break;
+                    case SASMode.RadialOut:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.RadialOut);
+                        break;
+                    default:
+                        Vessel.Autopilot.SetMode(VesselAutopilot.AutopilotMode.StabilityAssist);
+                        break;
+                }
+            }
+            else
+            {
+                if (sasMode == SASMode.FlyByWire)
+                {
+                    sasFlyByWire = false;
+                    rwLockedOnDirection = false;
+                }
+            }
         }
 
         public void SetTarget(ITargetable target, bool setFlightGlobals, bool setVesselModule)
@@ -455,7 +521,7 @@ namespace MandatoryRCS
                 currentTarget = target;
                 targetInfo = new ProtoTargetInfo(target);
 
-                if (currentTarget == null && autopilotContext == SpeedDisplayModes.Target)
+                if (currentTarget == null && sasContext == SpeedDisplayModes.Target)
                 {
                     SetContext(SpeedDisplayModes.Orbit, PlayerControlled(), true);
                 }
@@ -480,7 +546,7 @@ namespace MandatoryRCS
             }
             if (setVesselModule)
             {
-                autopilotContext = mode;
+                sasContext = mode;
             }
             
         }
@@ -529,14 +595,14 @@ namespace MandatoryRCS
             if (currentTarget == null)
             {
                 Debug.Log("[MRCS] [" + vessel.vesselName + "] PackedLoadingFirstFrame : No target restored");
-                if (sasAttitude.ModeInTargetContextOnly(autopilotMode))
+                if (sasAttitude.ModeInTargetContextOnly(sasMode))
                 {
                     sasAttitude.ResetToKillRot();
                     Debug.Log("[MRCS] [" + vessel.vesselName + "] PackedLoadingFirstFrame : the SAS was in a target dependant mode, resetting to KillRot");
                 }
-                if (autopilotContext == SpeedDisplayModes.Target)
+                if (sasContext == SpeedDisplayModes.Target)
                 {
-                    autopilotContext = SpeedDisplayModes.Orbit;
+                    sasContext = SpeedDisplayModes.Orbit;
                     Debug.Log("[MRCS] [" + vessel.vesselName + "] PackedLoadingFirstFrame : the SAS was in Target context, resetting to Orbit");
                 }
             }
