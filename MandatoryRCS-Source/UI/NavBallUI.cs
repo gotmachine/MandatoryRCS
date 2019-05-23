@@ -142,7 +142,7 @@ namespace MandatoryRCS.UI
         private void LateUpdate()
         {
             // We don't do anything for EVA kerbals
-            if (vesselModule.Vessel.isEVA) return;
+            if (FlightGlobals.ActiveVessel == null || FlightGlobals.ActiveVessel.isEVA) return;
 
             // Get references to the navball GameObjects, if they are still null abort
             if (navBall == null)
