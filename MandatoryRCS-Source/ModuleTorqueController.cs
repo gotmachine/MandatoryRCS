@@ -4,10 +4,6 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-// TODO :
-// - Wheels saturation when landed
-// - (Maybe) Torque ON when RCS is ON, to reduce RCS fuel consumption
-
 namespace MandatoryRCS
 {
     public class ModuleTorqueController : PartModule
@@ -38,13 +34,6 @@ namespace MandatoryRCS
 
         public void Start()
         {
-            // Get the reaction wheel module
-            rwmodule = part.Modules.GetModule<ModuleReactionWheel>();
-            // Get the module config torque value
-            maxTorque.x = rwmodule.PitchTorque;
-            maxTorque.y = rwmodule.RollTorque;
-            maxTorque.z = rwmodule.YawTorque;
-
             if (MandatoryRCSSettings.featureReactionWheels)
             {
                 // Does this RW respond to pilot/SAS input ?
@@ -77,9 +66,16 @@ namespace MandatoryRCS
                     vessel.OnPreAutopilotUpdate += new FlightInputCallback(GetPilotInput);
                     callbackIsActive = true;
                 }
+                else if (HighLogic.LoadedSceneIsEditor)
+                {
+                    rwmodule = part.Modules.GetModule<ModuleReactionWheel>();
+
+                    if (rwmodule == null)
+                        return;
+
+                    TweakUI(rwmodule);
+                }
             }
-            // Hide RW control modes and enable/disable toggle from GUI and action groups
-            TweakUI();
         }
 
         private void GetPilotInput(FlightCtrlState st)
@@ -95,14 +91,45 @@ namespace MandatoryRCS
                 vessel.OnPreAutopilotUpdate -= new FlightInputCallback(GetPilotInput);
             }
         }
-        
-        // Apply torque in OnFlyByWire because the module FixedUpdate() is called too late, resulting in a 1 frame lag in torque updates, leading to having torque when you shouldn't.
+
+        // Apply torque in OnFlyByWire because the module FixedUpdate() is called too late, 
+        // resulting in a 1 frame lag in torque updates, leading to having torque when you shouldn't.
         private void UpdateTorque(FlightCtrlState st)
         {
+            // autopilot can be null just before vessel is destroyed
+            if (vessel.Autopilot == null)
+                return;
+
+            // Not sure why but in some cases the reference the the module can be null if acquired in OnStart. 
+            // To be on the safe side we acquire it here
+            if (rwmodule == null)
+            {
+                // Get the reaction wheel module
+                rwmodule = part.Modules.GetModule<ModuleReactionWheel>();
+
+                if (rwmodule == null)
+                    return;
+
+                // Get the module config torque value
+                maxTorque.x = rwmodule.PitchTorque;
+                maxTorque.y = rwmodule.RollTorque;
+                maxTorque.z = rwmodule.YawTorque;
+
+                // Hide RW control modes and enable/disable toggle from GUI and action groups
+                TweakUI(rwmodule);
+            }
+
+            // do this only once, and check for null
+            // note : not caching it because keeping track of vesselModule changes is a mess
+            VesselModuleRotation vRotModule = vessel.vesselModules.OfType<VesselModuleRotation>().FirstOrDefault();
+            if (vRotModule == null)
+                return;
+
+            // We have everything we need, now do the nerf
             if (FlightGlobals.ready && vessel.loaded && !vessel.packed)
             {
                 // Get the saturation factor calculated from the vessel rotation
-                saturationFactor = vessel.vesselModules.OfType<VesselModuleRotation>().First().velSaturationTorqueFactor;
+                saturationFactor = vRotModule.velSaturationTorqueFactor;
 
                 // On pilot rotation requests, use nerfed torque output
                 if (pilotInput)
@@ -122,7 +149,7 @@ namespace MandatoryRCS
                             // SAS is in target mode, enable full torque if the target is near. 
                             // orientationDiff : 1.0 = toward target, 0.0 = target is at a 90° angle
                             // float orientationDiff = Math.Max(Vector3.Dot(vessel.Autopilot.SAS.targetOrientation.normalized, vessel.GetTransform().up.normalized), 0);
-                            float orientationDiff = Math.Max(Vector3.Dot(vessel.vesselModules.OfType<VesselModuleRotation>().First().targetDirection.normalized, vessel.GetTransform().up.normalized), 0);
+                            float orientationDiff = Math.Max(Vector3.Dot(vRotModule.targetDirection.normalized, vessel.GetTransform().up.normalized), 0);
 
                             if (!isOnTarget && orientationDiff > 0.999f)
                             {
@@ -208,37 +235,34 @@ namespace MandatoryRCS
         // Disable all UI buttons and action groups, except the authority limiter slider.
         // RW torque can still be tweaked/disabled trough the renamed for clarity "Reaction Wheel Autority" GUI
         // TODO : reenable Normal/SAS/Pilot mode switch if strictMode is disabled
-        private void TweakUI()
+        private static void TweakUI(ModuleReactionWheel rw)
         {
-            if (HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor)
+            foreach (BaseField f in rw.Fields)
             {
-                foreach (BaseField f in rwmodule.Fields)
+                if (f.name.Equals("actuatorModeCycle") || f.name.Equals("stateString"))
                 {
-                    if (f.name.Equals("actuatorModeCycle") || f.name.Equals("stateString"))
-                    {
-                        f.guiActive = false;
-                        f.guiActiveEditor = false;
-                    }
-                    if (f.name.Equals("authorityLimiter"))
-                    {
-                        f.guiName = "Reaction Wheel Authority";
-                    }
-                    // Debug.Log("RW Fields : guiName=" + f.guiName + ", name=" + f.name + ", guiActive=" + f.guiActive + ", guiActiveEditor=" + f.guiActiveEditor);
+                    f.guiActive = false;
+                    f.guiActiveEditor = false;
                 }
-                foreach (BaseEvent e in rwmodule.Events)
+                if (f.name.Equals("authorityLimiter"))
                 {
-                    if (e.name.Equals("OnToggle"))
-                    {
-                        e.guiActive = false;
-                        e.guiActiveEditor = false;
-                    }
-                    // Debug.Log("RW Events : guiName=" + e.guiName + ", name=" + e.name + ", guiActive=" + e.guiActive + ", guiActiveEditor=" + e.guiActiveEditor);
+                    f.guiName = "Reaction Wheel Authority";
                 }
-                foreach (BaseAction a in rwmodule.Actions)
+                // Debug.Log("RW Fields : guiName=" + f.guiName + ", name=" + f.name + ", guiActive=" + f.guiActive + ", guiActiveEditor=" + f.guiActiveEditor);
+            }
+            foreach (BaseEvent e in rw.Events)
+            {
+                if (e.name.Equals("OnToggle"))
                 {
-                    a.active = false;
-                    // Debug.Log("RW Actions : guiName=" + a.guiName + ", name=" + a.name + ", active=" + a.active);
+                    e.guiActive = false;
+                    e.guiActiveEditor = false;
                 }
+                // Debug.Log("RW Events : guiName=" + e.guiName + ", name=" + e.name + ", guiActive=" + e.guiActive + ", guiActiveEditor=" + e.guiActiveEditor);
+            }
+            foreach (BaseAction a in rw.Actions)
+            {
+                a.active = false;
+                // Debug.Log("RW Actions : guiName=" + a.guiName + ", name=" + a.name + ", active=" + a.active);
             }
         }
     }

@@ -59,9 +59,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"C:\Users\Got\Desktop\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll" "C:\Users\Got\Desktop\KSP\Kerbal Space Program 1.4.1 DEV\GameData\MandatoryRCS\"
-xcopy /Y "C:\Users\Got\Desktop\KSP\SPE source\Mod project\MandatoryRCS\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll.mdb" "C:\Users\Got\Desktop\KSP\Kerbal Space Program 1.4.1 DEV\GameData\MandatoryRCS\"</PostBuildEvent>
+    <PostBuildEvent>"D:\Projets\KSP\Tools\pdb2mdb\pdb2mdb.exe" "C:\Users\Got\Source\Repos\gotmachine\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll"
+xcopy /Y "C:\Users\Got\Source\Repos\gotmachine\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll" "D:\Projets\KSP\Kerbal Space Program 1.7.0 DEV\GameData\MandatoryRCS\"
+xcopy /Y "C:\Users\Got\Source\Repos\gotmachine\MandatoryRCS\MandatoryRCS-Source\bin\Debug\MandatoryRCS.dll.mdb" "D:\Projets\KSP\Kerbal Space Program 1.7.0 DEV\GameData\MandatoryRCS\"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
