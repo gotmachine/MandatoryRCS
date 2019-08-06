@@ -24,8 +24,6 @@ namespace MandatoryRCS
         [KSPField(guiActive = true, guiName = "yawTorque", guiFormat = "00.00")]
         public float yawTorque;
 
-
-
         [KSPField(guiActive = true, guiName = "inputVectorDelta")]
         public string inputVectorDelta;
 
