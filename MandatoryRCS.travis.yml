@@ -1,2 +1,12 @@
 language: csharp
 solution: MandatoryRCS.sln
+
+deploy:
+  provider: releases
+  api_key: "cbee8c14b8d2fe7bd1e9e740953c96604430bc9e"
+  file: 
+    - "obj\Release\MandatoryRCS.dll"
+  skip_cleanup: true
+  on:
+    tags: true
+  draft: true
