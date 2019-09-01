@@ -71,6 +71,9 @@ So public domain, feel free to do anything, especially updating this plugin if I
 - Getting out of timewarps with the SAS direction hold activated input a large roll "kick", most visible at high timewarp levels. I tried a lot of things to find out why this happen or fix it, and failed.
 - When switching to an unloaded vessel with its SAS in "target", "antitarget" or "maneuver" mode, the orientation change is applied a few frames after the vessel is unpacked, leading to the rotation event being visible to the player. Won't fix as this is minor, purely cosmetic and fixing would require large modifications.
 
+#### v1.7 for KSP 1.7.0 - 01/09/2019
+- Added support configs to move RCS thrusters / MP tanks / reaction wheels earlier in the tech tree. Supported parts : stock, RLA stockalike and ReStockPlus.
+
 #### v1.6 for KSP 1.7.0 - 31/05/2019
 - Recompiled for KSP 1.7 (should be compatible with KSP 1.6)
 - Code tweaks for fail-safe reference acquisition to the stock module. Should fix be the occasional nullref spam that was happening on reentry.
